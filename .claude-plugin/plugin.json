@@ -2,7 +2,7 @@
   "name": "digi4school-summarizer",
   "version": "0.1.0",
   "description": "Summarize your own digi4school e-textbooks by page range or topic. Locates the content, extracts it the fastest available way (presentation, text layer, OCR, or on-screen reading), and delivers a Word summary in the book's language. You log in yourself; it never handles passwords.",
-  "author": { "name": "Your Name" },
+  "author": { "name": "James" },
   "license": "MIT",
   "keywords": ["digi4school", "textbook", "summary", "study", "ocr", "education", "austria"]
 }

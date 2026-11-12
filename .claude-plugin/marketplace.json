@@ -1,7 +1,7 @@
 {
   "name": "digi4school-tools",
   "description": "Tools for summarizing your own digi4school e-textbooks.",
-  "owner": { "name": "Your Name" },
+  "owner": { "name": "James" },
   "plugins": [
     {
       "name": "digi4school-summarizer",
