@@ -53,7 +53,8 @@ into an AI by hand.
 cp -R skills/digi4school-summarizer ~/.claude/skills/
 ```
 
-Then restart Claude. That's it.
+Then restart Claude. That's it. (The skill is a **single self-contained `SKILL.md`** —
+no other files or dependencies to wire up.)
 
 **Option B — as a Claude plugin:** this repo includes a `.claude-plugin/plugin.json` manifest,
 so it can be added through your Claude plugin/marketplace flow if you use one.

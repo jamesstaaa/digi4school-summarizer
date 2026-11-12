@@ -2,8 +2,8 @@
 name: digi4school-summarizer
 description: >
   Extract text from an e-book in the user's digi4school library (Austrian school
-  textbook platform) using the Claude-in-Chrome browser, then do whatever the
-  user asks with it (summary, flashcards, vocab, Q&A, knowledge graph, raw text).
+  textbook platform) using a browser (Claude's built-in pane or the Chrome
+  extension), then do whatever the user asks with it (summary, flashcards, vocab, Q&A).
   The USER logs in; this skill never handles passwords. Trigger when the user
   wants to pull information out of a digi4school / "digibook" textbook, names a
   book on digi4school, or says "/digi4school-summarizer".
@@ -25,8 +25,9 @@ extension is the alternative (tools `mcp__claude-in-chrome__*`).
 - Only read books the user already owns in their own library. This is their
   purchased material, read for their own study — do not reproduce whole books
   verbatim to third parties; the normal use is summaries/study aids for the user.
-- Work in the user's real Chrome (this is where they're logged in), not the
-  built-in browser pane.
+- Use whichever browser the user is signed in on — **prefer Claude's built-in
+  browser pane** (no install); the Chrome extension is the alternative. Detect what's
+  available rather than assuming one.
 - **Information fidelity (important to this user):** everything in the output must
   come ONLY from the extracted book pages. Never add outside/background knowledge,
   never infer, embellish or "fill gaps". If the pages don't say it, it isn't in the
@@ -181,11 +182,65 @@ directly scrapable. Figures/photos are separate raster files
 (`.../<id>/N/img/K.png|jpg`). There is a page offset: the SVG index N in the URL
 is usually the printed page + 2 — confirm once (navigate `?page=42`, read `#txtPage`).
 
-**Primary: OCR the text automatically (preferred — tool: `trauner-ocr.js`).**
+**Primary: OCR the text automatically (preferred — OCR module inlined below).**
 Runs entirely inside the authenticated tab; no local installs, no cookies. It
 fetches each page SVG, strips the photos, renders the text to a hi-res canvas, and
 OCRs it with tesseract.js. Steps (via the Chrome `javascript_tool`):
-1. Inject the whole contents of `trauner-ocr.js` (this skill's folder) once.
+1. Inject this OCR module once (paste the whole block as the `javascript_tool` text; it defines `window.D4S`):
+```js
+(function () {
+  const S = (window.D4S = window.D4S || {});
+  S.pages = S.pages || {}; S._worker = S._worker || null; S._base = S._base || null; S._lang = S._lang || 'deu';
+  function detectBase() {
+    const obj = document.querySelector('object[type="image/svg+xml"]');
+    if (obj && obj.data && /\/\d+\.svg/.test(obj.data)) return obj.data.replace(/\/[^/]+\.svg.*$/, '');
+    const m = location.href.match(/^(https?:\/\/[^?]*\/ebook\/\d+(?:\/\d+)?)\b/);
+    return m ? m[1] : null;
+  }
+  S.ensureTesseract = async function () {
+    if (typeof Tesseract !== 'undefined') return;
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.1/tesseract.min.js';
+      s.onload = res; s.onerror = () => rej(new Error('tesseract.js blocked (CSP?)'));
+      document.head.appendChild(s);
+      setTimeout(() => rej(new Error('tesseract.js load timeout')), 15000);
+    });
+  };
+  S.init = async function (opts = {}) {
+    S._base = opts.base || detectBase(); S._lang = opts.lang || S._lang;
+    if (!S._base) throw new Error('Could not detect ebook base URL — pass {base:".../ebook/<id>"}');
+    await S.ensureTesseract();
+    if (!S._worker) S._worker = await Tesseract.createWorker(S._lang);
+    return { base: S._base, lang: S._lang };
+  };
+  S.renderCanvas = async function (svgN, scale = 2.5) {
+    let svg = await (await fetch(`${S._base}/${svgN}.svg`, { credentials: 'include' })).text();
+    svg = svg.replace(/<image\b[\s\S]*?\/>/g, '').replace(/<image\b[\s\S]*?<\/image>/g, '');
+    const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+    const img = new Image(); await new Promise((r) => { img.onload = r; img.onerror = r; img.src = url; });
+    const c = document.createElement('canvas');
+    c.width = (img.naturalWidth || 900) * scale; c.height = (img.naturalHeight || 1280) * scale;
+    const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+    ctx.scale(scale, scale); ctx.drawImage(img, 0, 0); URL.revokeObjectURL(url); return c;
+  };
+  S.ocr = async function (startDisplayed, endDisplayed, opts = {}) {
+    const offset = opts.offset != null ? opts.offset : 2; const scale = opts.scale || 2.5;
+    if (!S._worker) await S.init(opts);
+    const out = {};
+    for (let d = startDisplayed; d <= endDisplayed; d++) {
+      const canvas = await S.renderCanvas(d + offset, scale);
+      const { data } = await S._worker.recognize(canvas);
+      S.pages[d] = (data.text || '').replace(/[ \t]+\n/g, '\n').trim(); out[d] = S.pages[d].length;
+    }
+    return { ocrd: out };
+  };
+  S.dump = function () { return S.pages; };
+  S.text = function () {
+    return Object.keys(S.pages).map(Number).sort((a, b) => a - b).map((p) => `\n===== Seite ${p} =====\n${S.pages[p]}`).join('\n');
+  };
+})();
+```
 2. `await D4S.init();` (auto-detects the ebook id; loads tesseract.js from cdnjs).
 3. Confirm the offset once, then OCR in **~4-page chunks** so each call stays under
    the ~45s tool timeout — the worker is cached across calls:
@@ -248,7 +303,7 @@ wants the book left open.
   Re-confirm the detection step — and do the CSP check (try injecting tesseract.js;
   if it's blocked, read visually) — the first time you hit a new publisher.
 - Speed note: method A (Hölzel) is near-instant. Method 3B (TRAUNER) has no text
-  layer; `trauner-ocr.js` extracts the text automatically (~8s/page, unattended) so
+  layer; the inlined OCR module extracts the text automatically (~8s/page) so
   you no longer read every page by eye — you only visually visit the few pages that
   have a figure to embed. OCR reading-order on columns/tables is imperfect, so for
   pixel-clean raw text the glyph-map decoder (render each unique glyph once → map to a
