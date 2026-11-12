@@ -78,11 +78,24 @@ search in step 1a):
    the chapter.
 2. **A real text layer in the reader** (e.g. Hölzel) → grab the text instantly, summarise.
 3. **OCR** when pages are outlined SVG and the viewer allows tesseract.js (e.g. TRAUNER)
-   → automated, ~8s/page.
+   → automated via `ocrFast` (paced fetch + parallel OCR), ~1–1.5 min per 50 pages (see §3B).
 4. **Visual reading** when OCR is blocked by CSP (e.g. digi4school native / Best Shots)
    → slowest, hands-free but minutes; minimise by reading ONLY the located pages.
-Tell the user upfront which route applies and the rough time, so expectations are set:
-a `.ppsx`/PowerPoint chapter ≈ a couple of minutes; a visual-read-only chapter ≈ several.
+Tell the user upfront which route applies and the rough time, so expectations are set.
+
+**Realistic safe-max times (50 pages, finished Word summary — paced, low risk):**
+
+| Route | Finished summary | Account risk |
+|-------|------------------|--------------|
+| 1. Presentation (`.ppsx`) | ~2 min | ~none (normal downloads) |
+| 2. Text layer (Hölzel) | ~2–3 min | low (acts like a reader) |
+| 3. OCR (`ocrFast`, TRAUNER) | ~2.5–3 min | low–moderate |
+| 4. Visual reading (native/Best Shots) | ~3–5 min | low (uses the real reader) |
+
+Two walls set these and can't be beaten while staying safe: the **~1 page/s** safe fetch
+rate (faster → ban risk climbs) and the **~1–2 min** the model needs to actually write the
+summary (shared by every route — it's why nothing goes below ~1.5 min). The real speed lever
+is **route selection** (reach for a presentation), not pushing a single route harder.
 
 ## Procedure
 
@@ -190,7 +203,7 @@ OCRs it with tesseract.js. Steps (via the Chrome `javascript_tool`):
 ```js
 (function () {
   const S = (window.D4S = window.D4S || {});
-  S.pages = S.pages || {}; S._worker = S._worker || null; S._base = S._base || null; S._lang = S._lang || 'deu';
+  S.pages = S.pages || {}; S._pool = S._pool || null; S._base = S._base || null; S._lang = S._lang || 'deu';
   function detectBase() {
     const obj = document.querySelector('object[type="image/svg+xml"]');
     if (obj && obj.data && /\/\d+\.svg/.test(obj.data)) return obj.data.replace(/\/[^/]+\.svg.*$/, '');
@@ -207,13 +220,6 @@ OCRs it with tesseract.js. Steps (via the Chrome `javascript_tool`):
       setTimeout(() => rej(new Error('tesseract.js load timeout')), 15000);
     });
   };
-  S.init = async function (opts = {}) {
-    S._base = opts.base || detectBase(); S._lang = opts.lang || S._lang;
-    if (!S._base) throw new Error('Could not detect ebook base URL — pass {base:".../ebook/<id>"}');
-    await S.ensureTesseract();
-    if (!S._worker) S._worker = await Tesseract.createWorker(S._lang);
-    return { base: S._base, lang: S._lang };
-  };
   S.renderCanvas = async function (svgN, scale = 2.5) {
     let svg = await (await fetch(`${S._base}/${svgN}.svg`, { credentials: 'include' })).text();
     svg = svg.replace(/<image\b[\s\S]*?\/>/g, '').replace(/<image\b[\s\S]*?<\/image>/g, '');
@@ -224,16 +230,22 @@ OCRs it with tesseract.js. Steps (via the Chrome `javascript_tool`):
     const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
     ctx.scale(scale, scale); ctx.drawImage(img, 0, 0); URL.revokeObjectURL(url); return c;
   };
-  S.ocr = async function (startDisplayed, endDisplayed, opts = {}) {
-    const offset = opts.offset != null ? opts.offset : 2; const scale = opts.scale || 2.5;
-    if (!S._worker) await S.init(opts);
-    const out = {};
-    for (let d = startDisplayed; d <= endDisplayed; d++) {
-      const canvas = await S.renderCanvas(d + offset, scale);
-      const { data } = await S._worker.recognize(canvas);
-      S.pages[d] = (data.text || '').replace(/[ \t]+\n/g, '\n').trim(); out[d] = S.pages[d].length;
-    }
-    return { ocrd: out };
+  // Paced + parallel OCR. Fetch STARTS are serialised ~minGap+jitter apart (human-like, NEVER a
+  // burst); OCR runs in parallel across a worker pool (local, invisible to the server).
+  S.ocrFast = async function (start, end, opts = {}) {
+    const offset = opts.offset ?? 2, scale = opts.scale || 2.5;
+    const minGap = opts.minGapMs ?? 1000, jitter = opts.jitterMs ?? 700;
+    const K = Math.max(1, Math.min(opts.workers ?? Math.min(navigator.hardwareConcurrency || 4, 4), 8));
+    S._lang = opts.lang || S._lang; S._base = opts.base || S._base || detectBase();
+    if (!S._base) throw new Error('Could not detect ebook base URL — pass {base:".../ebook/<id>"}');
+    await S.ensureTesseract();
+    S._pool = S._pool || []; while (S._pool.length < K) S._pool.push(await Tesseract.createWorker(S._lang));
+    let gate = Promise.resolve();
+    const paced = (d) => { const turn = gate.then(() => new Promise(r => setTimeout(r, minGap + Math.random() * jitter))); gate = turn; return turn.then(() => S.renderCanvas(d + offset, scale)); };
+    const q = []; for (let d = start; d <= end; d++) q.push(d); let i = 0;
+    const run = async (w) => { while (i < q.length) { const d = q[i++]; const cv = await paced(d); const { data } = await w.recognize(cv); S.pages[d] = (data.text || '').replace(/[ \t]+\n/g, '\n').trim(); } };
+    await Promise.all(S._pool.slice(0, K).map(run));
+    return { done: q.length };
   };
   S.dump = function () { return S.pages; };
   S.text = function () {
@@ -241,15 +253,26 @@ OCRs it with tesseract.js. Steps (via the Chrome `javascript_tool`):
   };
 })();
 ```
-2. `await D4S.init();` (auto-detects the ebook id; loads tesseract.js from cdnjs).
-3. Confirm the offset once, then OCR in **~4-page chunks** so each call stays under
-   the ~45s tool timeout — the worker is cached across calls:
-   `await D4S.ocr(40,43,{offset:2});` … `await D4S.ocr(44,47,{offset:2});`
-4. Collect with `D4S.text()` (all pages) and summarise/transform from that.
-   ~8s/page (first page ~11s incl. model download); `{lang:'eng'}` for English books.
-Caveat: reading order on multi-column pages / tables can interleave (margin notes,
-table columns merge). Fine to summarise from; for clean raw text, treat as a draft
-and tidy. If tesseract.js is blocked (CSP) on some host, fall back to visual reading.
+2. Confirm the offset once (navigate `?page=42`, read `#txtPage`), then OCR in
+   **~12-page chunks** so each call stays under the ~45s tool timeout — the worker
+   pool is cached on `window` across calls:
+   `await D4S.ocrFast(40,51,{offset:2});` … `await D4S.ocrFast(52,63,{offset:2});`
+3. Collect with `D4S.text()` and summarise/transform from that.
+   ~1–1.5 min for 50 pages (first chunk +~11s for the model load); `{lang:'eng'}` for English.
+
+**Pacing & safety policy (do NOT remove — it's what keeps this looking human):**
+- `ocrFast` **serialises fetch STARTS ~1–1.7 s apart** (minGap 1000 + jitter 700) and
+  NEVER fetches pages in parallel. That paced, sequential, jittered pattern reads as a fast
+  skimmer, not a scraper — the one thing that would get an account flagged is firing many
+  page requests at once, so **never bypass the gate or fetch a whole book in a burst.**
+- **OCR parallelism (`workers`) is LOCAL only** — invisible to the server, safe for speed.
+  Default ≤4 workers to spare a weak laptop's RAM/CPU; raise only on strong hardware.
+- **Personal vs public:** default `minGapMs` ~1000 (≈1 page/s, fast-skim). For a PUBLIC/shared
+  build raise it to ~1500–2000 — the risk is the *aggregate* rate across many users, not one run.
+- **Scope tight:** only OCR the pages the topic needs (step 1a search), never the whole book.
+Caveat: reading order on multi-column pages / tables can interleave (margin notes, table
+columns merge). Fine to summarise from; for clean raw text, treat as a draft and tidy. If
+tesseract.js is blocked (CSP) on some host, fall back to visual reading.
 
 **Figures for a document (always visual):** OCR drops the photos, so to EMBED a
 figure, navigate to its page and use `computer` `zoom` with `save_to_disk:true` on
@@ -306,7 +329,7 @@ wants the book left open.
   Re-confirm the detection step — and do the CSP check (try injecting tesseract.js;
   if it's blocked, read visually) — the first time you hit a new publisher.
 - Speed note: method A (Hölzel) is near-instant. Method 3B (TRAUNER) has no text
-  layer; the inlined OCR module extracts the text automatically (~8s/page) so
+  layer; `ocrFast` extracts the text automatically (paced + parallel, ~1–1.5 min / 50 pp.) so
   you no longer read every page by eye — you only visually visit the few pages that
   have a figure to embed. OCR reading-order on columns/tables is imperfect, so for
   pixel-clean raw text the glyph-map decoder (render each unique glyph once → map to a
