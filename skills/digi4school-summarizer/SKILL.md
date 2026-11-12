@@ -67,6 +67,28 @@ extension is the alternative (tools `mcp__claude-in-chrome__*`).
 > (presentations where they exist, OCR where they don't). Built to be open-sourced,
 > so keep it self-contained and publisher-agnostic — no user-specific data baked in.
 
+## Interaction flow (what the user sees — keep it simple)
+When the user asks for a summary (a topic or a page range), do this:
+1. **Pre-flight FIRST, silently.** Before extracting anything, resolve the scope (§1a)
+   and check the route (§1b): how many chapters it spans, whether presentations cover
+   them, which route applies. Do this quickly — **do NOT narrate the mechanics.**
+2. **Then, before you start, tell the user in plain terms:**
+   - what you're about to do + the scope — *"Starting the summary of pages 50–100 now."*
+   - a rough **time estimate** from the route you found (≈2–4 min if decks cover it;
+     ≈5–7 min if it needs OCR + book figures — see the route-times table below).
+   - and **ask one thing: include the book's pictures/diagrams? (yes/no).**
+   Keep it to the **what + how long**. The user does NOT care *how* (presentations vs
+   OCR vs pacing) — never explain the extraction method, routes, or safety mechanics.
+3. **Then just do it** and deliver the Word doc.
+
+**Figures policy:**
+- "Yes, figures" on the **presentation route** → use the **deck's own diagrams** (already
+  in the `.ppsx`, free, no extra time). **Do NOT also capture the book's page figures by
+  default** — that re-adds the ~2-min visual pass and kills the presentation route's speed.
+- Capture the **book's** page figures (the zoom visual pass) only when the user specifically
+  wants the book's figures, or on the **OCR route** where that's how figures are obtained —
+  and if it adds the pass, say so in the estimate (~+2 min).
+
 ## Always take the fastest route to the content (speed ladder)
 Minimising the user's time is the whole point. For the requested topic/pages, use the
 HIGHEST available source on this ladder and stop — never do slower work when a faster
