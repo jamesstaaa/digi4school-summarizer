@@ -1,12 +1,28 @@
 # digi4school-summarizer
 
-A Claude skill that summarizes **your own** [digi4school](https://digi4school.at) e-textbooks.
+A **Claude Code** skill that summarizes **your own** [digi4school](https://digi4school.at) e-textbooks.
 You tell it a book and either an **exam scope by page numbers** (`pp. 40–55`) or **by topic**
 (`Joint Ventures`), and it finds that part in the book, pulls the content the fastest way
 available, and hands you a summary — so you never have to photograph pages and paste them
 into an AI by hand.
 
 > **You log in yourself. The skill never sees or types your password.**
+
+---
+
+## ⚠️ Runs in Claude Code ONLY — not the regular Claude app
+
+This is a **Claude Code** skill/plugin. It works **only** in Claude Code:
+- the **`claude` CLI** in a terminal,
+- **[claude.ai/code](https://claude.ai/code)**, or
+- the **Code** area of the Claude **desktop app**.
+
+It does **NOT** work in the normal Claude app / chat (claude.ai) — there is no `/plugin`
+command, no skill loading, and no browser/Python automation there, so the install commands
+below simply won't be recognised. This tool is therefore for people **already using Claude
+Code**. Reaching regular-Claude-app users (or people with no AI tool) would require a
+separate **standalone app**, which a Claude Code skill cannot be — see
+[Limitations & honesty](#limitations--honesty).
 
 ---
 
@@ -35,7 +51,8 @@ into an AI by hand.
 
 ## Requirements
 
-- **Claude** with skills support and a browser tool — either:
+- **Claude Code** — the `claude` CLI, claude.ai/code, or the Code area of the desktop app
+  (NOT the regular Claude app/chat) — with a browser tool, either:
   - the **built-in browser pane** (no install; recommended for non-technical users), **or**
   - the **Claude-in-Chrome** extension (uses your own Chrome).
 - **Python 3** with `python-docx` and `Pillow` (only needed for the Word-document output):
@@ -129,9 +146,11 @@ and handled by the same logic, and may need a one-time confirmation on first use
 
 ## Limitations & honesty
 
-- It's a **Claude skill**, so you need Claude with skills + a browser — it is not (yet) a
-  one-click app for a completely non-technical user. A standalone app would be a separate,
-  larger project (see Roadmap).
+- **It runs only in Claude Code** (the `claude` CLI, claude.ai/code, or the desktop app's
+  Code area), **not the regular Claude app/chat**. So your users must already be Claude Code
+  users — a developer-oriented environment, not something a typical student or non-technical
+  person uses. Reaching regular-Claude-app users, or anyone with no AI tool, would need a
+  separate **standalone app** (a much larger project — a skill cannot be one).
 - Figures/diagrams that are images come through only where the skill captures them; summaries
   of **image-only** books rely on OCR/reading and inherit those limits (e.g. column order in
   dense tables).
@@ -141,7 +160,8 @@ and handled by the same logic, and may need a one-time confirmation on first use
 
 - Wider publisher coverage as new readers are encountered.
 - A cross-reader OCR path for readers that block in-page OCR.
-- (Bigger) a standalone, zero-setup app so non-technical users can use it without Claude skills.
+- (Bigger) a standalone, zero-setup app so non-technical users — and regular Claude-app users —
+  can use it **without Claude Code**.
 
 ## License
 
