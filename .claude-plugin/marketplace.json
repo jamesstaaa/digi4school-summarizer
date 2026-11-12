@@ -1,0 +1,12 @@
+{
+  "name": "digi4school-tools",
+  "description": "Tools for summarizing your own digi4school e-textbooks.",
+  "owner": { "name": "Your Name" },
+  "plugins": [
+    {
+      "name": "digi4school-summarizer",
+      "source": "./",
+      "description": "Summarize, flashcard, and quiz your own digi4school textbooks by page range or topic."
+    }
+  ]
+}

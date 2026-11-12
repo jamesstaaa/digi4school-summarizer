@@ -47,34 +47,53 @@ into an AI by hand.
 
 ## Install
 
-Download this repo (**Code ▸ Download ZIP**, then unzip — or `git clone`), then:
+### Recommended — inside Claude, no download, no Terminal
 
-**Option A — one-command installer (recommended).** Run it once; it copies the skill into
-`~/.claude/skills/` and installs the Python deps for you.
+If you already use Claude, install it as a plugin. Type these two lines in Claude's
+message box (replace `<owner>` with the GitHub account hosting this repo):
 
-- macOS / Linux:
-  ```bash
-  bash install.sh
-  ```
-- Windows (PowerShell):
-  ```powershell
-  ./install.ps1
-  ```
+```
+/plugin marketplace add <owner>/digi4school-summarizer
+/plugin install digi4school-summarizer@digi4school-tools
+```
 
-Then **restart Claude** and type `/digi4school-summarizer`. Done.
+Pick a scope and confirm in the panel that opens. If the skill doesn't appear right away,
+run `/reload-plugins`. For the Word-document output you also need Python with `python-docx`
+and `Pillow` — the skill installs these itself on first use, or run `pip3 install python-docx Pillow`.
 
-**Option B — manual (one file).** The skill is a single self-contained `SKILL.md`, so you can
-just copy the folder yourself:
+**Using it:** just ask in plain language — *"summarize the Joint Ventures topic from my
+Praxisblicke book as a Word doc"* — or run `/digi4school-summarizer:digi4school-summarizer`.
+
+### Alternative — one-command installer
+
+Download the repo (**Code ▸ Download ZIP** then unzip, or `git clone`) and run once:
+
+- macOS / Linux: `bash install.sh`
+- Windows (PowerShell): `./install.ps1`
+
+Then restart Claude. This copies the skill into `~/.claude/skills/` and installs the Python
+deps. Invoke the installed skill with `/digi4school-summarizer`.
+
+### Alternative — manual (single file)
+
+The skill is a single self-contained `SKILL.md`; copy it yourself:
 ```bash
 cp -R skills/digi4school-summarizer ~/.claude/skills/
 ```
-(then `pip3 install python-docx Pillow` for Word output, and restart Claude).
+then `pip3 install python-docx Pillow`, and restart Claude.
 
-**Option C — as a Claude plugin.** This repo includes a `.claude-plugin/plugin.json` manifest,
-so it can also be added through Claude's plugin flow if you use one.
+> Nothing registers a skill with *zero* action — the plugin flow gets it down to two lines
+> typed inside Claude, which is as close as it gets.
 
-> Note: nothing can register a skill with *zero* action — one of the above has to place it in
-> the skills folder and Claude has to reload. These get it down to a single step.
+---
+
+### Maintainer notes (publishing)
+
+This repo is **both** the plugin and its marketplace (`.claude-plugin/plugin.json` +
+`.claude-plugin/marketplace.json`). To publish: set `owner.name`/`author.name` to your name,
+push to GitHub, and share the two `/plugin` commands above. Bump `version` in `plugin.json` on
+each release — users only get updates when the version string changes (third-party marketplaces
+don't auto-update). Validate locally with `claude plugin validate .`.
 
 ## How to use
 
