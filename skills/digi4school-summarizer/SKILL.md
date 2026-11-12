@@ -268,7 +268,10 @@ advance pages with the next-page control. Confirm the first page matches the
 screenshot before looping. (Verify on first use.)
 
 ### Build an exportable document (Word/PDF)
-`python-docx` + `Pillow` are available. Build the .docx programmatically: English
+Ensure the deps are present first (self-heal):
+`python3 -c "import docx, PIL" 2>/dev/null || pip3 install python-docx Pillow`.
+If install fails (restricted env), fall back to a Markdown summary and tell the user.
+Then build the .docx programmatically: English
 (or German) summary, **rebuild vector tables as real Word tables** (cleaner than an
 image), and embed the `zoom` figure crops with captions. Save into the project
 folder so it opens in the app; send it with SendUserFile. Export to PDF if asked.

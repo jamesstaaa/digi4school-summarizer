@@ -47,17 +47,34 @@ into an AI by hand.
 
 ## Install
 
-**Option A — drop-in skill (simplest):** copy the skill folder into your Claude skills directory:
+Download this repo (**Code ▸ Download ZIP**, then unzip — or `git clone`), then:
 
+**Option A — one-command installer (recommended).** Run it once; it copies the skill into
+`~/.claude/skills/` and installs the Python deps for you.
+
+- macOS / Linux:
+  ```bash
+  bash install.sh
+  ```
+- Windows (PowerShell):
+  ```powershell
+  ./install.ps1
+  ```
+
+Then **restart Claude** and type `/digi4school-summarizer`. Done.
+
+**Option B — manual (one file).** The skill is a single self-contained `SKILL.md`, so you can
+just copy the folder yourself:
 ```bash
 cp -R skills/digi4school-summarizer ~/.claude/skills/
 ```
+(then `pip3 install python-docx Pillow` for Word output, and restart Claude).
 
-Then restart Claude. That's it. (The skill is a **single self-contained `SKILL.md`** —
-no other files or dependencies to wire up.)
+**Option C — as a Claude plugin.** This repo includes a `.claude-plugin/plugin.json` manifest,
+so it can also be added through Claude's plugin flow if you use one.
 
-**Option B — as a Claude plugin:** this repo includes a `.claude-plugin/plugin.json` manifest,
-so it can be added through your Claude plugin/marketplace flow if you use one.
+> Note: nothing can register a skill with *zero* action — one of the above has to place it in
+> the skills folder and Claude has to reload. These get it down to a single step.
 
 ## How to use
 
