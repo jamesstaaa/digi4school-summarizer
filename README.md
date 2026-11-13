@@ -64,43 +64,41 @@ separate **standalone app**, which a Claude Code skill cannot be — see
 
 ## Install
 
-### Recommended — inside Claude, no download, no Terminal
+### ✅ Recommended — one line in a Terminal
 
-If you already use Claude, install it as a plugin. Type these two lines in Claude's
-message box (replace `<owner>` with the GitHub account hosting this repo):
+Open a **Terminal** (the macOS/Linux terminal app — **not** the Claude app) and paste this
+single line, then press Enter:
+
+```bash
+curl -fsSL https://github.com/jamesstaaa/digi4school-summarizer/archive/refs/heads/main.tar.gz | tar -xz -C /tmp && mkdir -p "$HOME/.claude/skills" && rm -rf "$HOME/.claude/skills/digi4school-summarizer" && cp -R /tmp/digi4school-summarizer-main/skills/digi4school-summarizer "$HOME/.claude/skills/" && rm -rf /tmp/digi4school-summarizer-main && { python3 -m pip install --user --quiet python-docx Pillow 2>/dev/null || true; } && echo "✅ Installed — restart Claude, then use it in the Code area."
+```
+
+It downloads the skill from GitHub, copies it into `~/.claude/skills/`, installs the Python
+deps for the Word output, and cleans up. Then **restart Claude** and use it in the **Code**
+area (the Code tab of the desktop app, or the `claude` CLI) — not the regular chat.
+
+### Alternative — as a Claude Code plugin (`claude` CLI / terminal only)
+
+> ⚠️ This has to be done in a **terminal** with the `claude` CLI. The Claude **desktop app's
+> Plugins menu cannot add a GitHub marketplace** — it only browses ones already installed, so
+> `/plugin marketplace add …` typed in the app just opens that browser and finds nothing.
 
 ```
-/plugin marketplace add <owner>/digi4school-summarizer
-/plugin install digi4school-summarizer@digi4school-tools
+claude plugin marketplace add jamesstaaa/digi4school-summarizer
+claude plugin install digi4school-summarizer@digi4school-tools
 ```
 
-Pick a scope and confirm in the panel that opens. If the skill doesn't appear right away,
-run `/reload-plugins`. For the Word-document output you also need Python with `python-docx`
-and `Pillow` — the skill installs these itself on first use, or run `pip3 install python-docx Pillow`.
-
-**Using it:** just ask in plain language — *"summarize the Joint Ventures topic from my
-Praxisblicke book as a Word doc"* — or run `/digi4school-summarizer:digi4school-summarizer`.
-
-### Alternative — one-command installer
-
-Download the repo (**Code ▸ Download ZIP** then unzip, or `git clone`) and run once:
-
-- macOS / Linux: `bash install.sh`
-- Windows (PowerShell): `./install.ps1`
-
-Then restart Claude. This copies the skill into `~/.claude/skills/` and installs the Python
-deps. Invoke the installed skill with `/digi4school-summarizer`.
+(Inside an interactive `claude` session the same commands are `/plugin marketplace add …`
+then `/plugin install …`, one line at a time.)
 
 ### Alternative — manual (single file)
 
-The skill is a single self-contained `SKILL.md`; copy it yourself:
+The skill is a single self-contained `SKILL.md`. From a downloaded copy of the repo:
 ```bash
 cp -R skills/digi4school-summarizer ~/.claude/skills/
 ```
-then `pip3 install python-docx Pillow`, and restart Claude.
-
-> Nothing registers a skill with *zero* action — the plugin flow gets it down to two lines
-> typed inside Claude, which is as close as it gets.
+then `pip3 install python-docx Pillow`, and restart Claude. (`install.sh` / `install.ps1` in
+the repo do the same.)
 
 ---
 
@@ -108,7 +106,8 @@ then `pip3 install python-docx Pillow`, and restart Claude.
 
 This repo is **both** the plugin and its marketplace (`.claude-plugin/plugin.json` +
 `.claude-plugin/marketplace.json`). To publish: set `owner.name`/`author.name` to your name,
-push to GitHub, and share the two `/plugin` commands above. Bump `version` in `plugin.json` on
+push to GitHub, and share the one-line Terminal installer above (or the `claude plugin`
+commands). Bump `version` in `plugin.json` on
 each release — users only get updates when the version string changes (third-party marketplaces
 don't auto-update). Validate locally with `claude plugin validate .`.
 
