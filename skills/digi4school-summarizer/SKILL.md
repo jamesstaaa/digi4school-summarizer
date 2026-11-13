@@ -72,15 +72,23 @@ When the user asks for a summary (a topic or a page range), do this:
 1. **Pre-flight FIRST, silently.** Before extracting anything, resolve the scope (§1a)
    and check the route (§1b): how many chapters it spans, whether presentations cover
    them, which route applies. Do this quickly — **do NOT narrate the mechanics.**
-2. **Then, before you start, ask the user (plain terms) and WAIT for the answer:**
-   - what you're about to do + the scope — *"Ready to summarise pages 50–100."*
-   - a rough **time estimate** from the route you found (see the route-times table below;
-     it includes the figure pass).
-   - **how should it be exported — Word (.docx), PDF, or straight into the chat?** (default Word)
-   Keep it to the **what + how long + that one choice**. Figures/models are **included by
-   default** (see "Figures & models") — don't ask; only skip them if the user says "no figures."
-   The user does NOT care *how* (presentations vs OCR vs pacing) — never explain the
-   extraction method, routes, or safety.
+2. **Then, before you start, ask the user (plain terms) and WAIT for the answer.** Ask in ONE
+   message, **in the user's own language** — the language they wrote their request in (if
+   unclear, their system/app language). Never ask a German speaker in English, etc. Ask:
+   - what you're about to do + the scope + a rough **time estimate** from the route you found
+     (give both: with figures / without figures — see the route-times table below);
+   - **how should it be exported — Word (.docx), PDF, or straight into the chat?** (default Word);
+   - **should the figures, diagrams, models and tables from the pages be included? (yes/no).**
+   Skip any item the user already answered in their request (e.g. "as a Word doc with figures").
+   Example (German): *"Bereit, die Seiten 50–100 zusammenzufassen (~5 Min. mit Abbildungen,
+   ~3 Min. ohne). Als Word, PDF oder hier im Chat? Sollen Abbildungen, Grafiken und Modelle
+   aus den Seiten eingefügt werden? (ja/nein)"* — Example (English): *"Ready to summarise pages
+   50–100 (~5 min with figures, ~3 without). Export as Word, PDF, or here in the chat? Include the
+   figures, diagrams and models from the pages? (yes/no)"*
+   Keep it short: **what + how long + those two choices.** The user does NOT care *how*
+   (presentations vs OCR vs pacing) — never explain the extraction method, routes, or safety.
+   (The interaction language is the user's; the **summary itself** stays in the **book's**
+   language unless they ask otherwise — see Hard rules.)
 3. **Then do it and deliver in the chosen format.**
 
 **Export rule (IMPORTANT — the user wants this):** by default always produce a **file**
@@ -118,10 +126,10 @@ viele Länder Asiens, Lateinamerikas und Afrikas haben sich dem Weltmarkt geöff
 RIGHT (summary style): `**Neue Märkte:** Ex-UdSSR, Indien, China, Asien/Lateinamerika/Afrika → Öffnung
 zum Weltmarkt` / `**Auswirkungen:** Ökonomie, Ökologie, Gesellschaft`.
 
-## Figures & models (included by default)
-Every informational **figure, model, diagram, chart, schema or process flow** on the pages in
-scope goes into the document **as the book's own image** — never retype a diagram as text
-boxes or lists. Also embed any table too complex to rebuild cleanly; simple tables (≤ 4
+## Figures & models (when the user said yes)
+If the user wants figures (step 2 — ask in their language), then every informational **figure,
+model, diagram, chart, schema or process flow** on the pages in scope goes into the document
+**as the book's own image** — never retype a diagram as text boxes or lists. Also embed any table too complex to rebuild cleanly; simple tables (≤ 4
 columns, short cells) are rebuilt as real Word tables instead. Skip decorative stock photos,
 logos, icons, QR codes and anything that belongs to an exercise.
 - **Figure pass (all routes):** figures are not in the extracted text (and on these viewers
@@ -136,8 +144,8 @@ logos, icons, QR codes and anything that belongs to an exercise.
   belongs, caption = `Titel (S. N)`.
 - **Presentation route:** the deck is used for the TEXT only. Its slide shapes can't be exported
   as images reliably, so figures still come from the book pages via the figure pass.
-- ~2–3 s per page → about **+2–3 min per 50 pages**; included in the times below. If the user
-  says "no figures", skip the pass (and subtract that time).
+- ~2–3 s per page → about **+2–3 min per 50 pages** (the "with figures" column below). If the
+  user answers "no", skip the figure pass entirely and use the "no figures" time.
 
 ## Always take the fastest route to the content (speed ladder)
 Minimising the user's time is the whole point. For the requested topic/pages, use the
@@ -157,7 +165,7 @@ Tell the user upfront which route applies and the rough time, so expectations ar
 
 **Realistic safe-max times (50 pages, finished document — paced, low risk):**
 
-| Route | With figures (default) | No figures | Account risk |
+| Route | With figures | No figures | Account risk |
 |-------|------------------------|------------|--------------|
 | 1. Presentation (`.ppsx`) | ~4–6 min | ~2 min | ~none for the deck; figure pass = normal viewing |
 | 2. Text layer (Hölzel) | ~4–6 min | ~2–3 min | low (acts like a reader) |
