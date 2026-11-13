@@ -46,8 +46,10 @@ separate **standalone app**, which a Claude Code skill cannot be — see
 2. **Extract the fastest way** (see the speed ladder below) — a ready-made chapter
    presentation if one exists, otherwise the reader's text layer, otherwise OCR, otherwise
    on-screen reading.
-3. **Summarize** — in the **book's own language**, using **only** what's in the book, and
-   deliver it as a **Word document** (figures and comparison tables included where useful).
+3. **Summarize** — a short, telegraphic **study summary** (bullets + comparison tables under the
+   book's own headings, key terms in bold, about 70–90 words per book page), in the **book's own
+   language**, using **only** what's in the book. Every figure, model and diagram on the pages is
+   embedded as an image. Delivered as a clean **Word document** (or PDF/chat — you choose first).
 
 ## Requirements
 
@@ -91,9 +93,9 @@ claude plugin install digi4school-summarizer@digi4school-tools
 (Inside an interactive `claude` session the same commands are `/plugin marketplace add …`
 then `/plugin install …`, one line at a time.)
 
-### Alternative — manual (single file)
+### Alternative — manual
 
-The skill is a single self-contained `SKILL.md`. From a downloaded copy of the repo:
+The skill is one folder (`SKILL.md` + the small `build_summary_docx.py` Word builder). From a downloaded copy of the repo:
 ```bash
 cp -R skills/digi4school-summarizer ~/.claude/skills/
 ```

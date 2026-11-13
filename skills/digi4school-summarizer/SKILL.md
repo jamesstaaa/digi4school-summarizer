@@ -74,12 +74,13 @@ When the user asks for a summary (a topic or a page range), do this:
    them, which route applies. Do this quickly — **do NOT narrate the mechanics.**
 2. **Then, before you start, ask the user (plain terms) and WAIT for the answer:**
    - what you're about to do + the scope — *"Ready to summarise pages 50–100."*
-   - a rough **time estimate** from the route you found (≈2–4 min if decks cover it;
-     ≈5–7 min if it needs OCR + book figures — see the route-times table below).
+   - a rough **time estimate** from the route you found (see the route-times table below;
+     it includes the figure pass).
    - **how should it be exported — Word (.docx), PDF, or straight into the chat?** (default Word)
-   - **include the book's pictures/diagrams? (yes/no).**
-   Keep it to the **what + how long + those two choices**. The user does NOT care *how*
-   (presentations vs OCR vs pacing) — never explain the extraction method, routes, or safety.
+   Keep it to the **what + how long + that one choice**. Figures/models are **included by
+   default** (see "Figures & models") — don't ask; only skip them if the user says "no figures."
+   The user does NOT care *how* (presentations vs OCR vs pacing) — never explain the
+   extraction method, routes, or safety.
 3. **Then do it and deliver in the chosen format.**
 
 **Export rule (IMPORTANT — the user wants this):** by default always produce a **file**
@@ -90,13 +91,53 @@ the message and only then offer a file. Mapping: **Word** → build with `python
 --convert-to pdf`, or render Markdown→PDF); **chat** → write it in the message as normal.
 Deliver the file with SendUserFile and save it in the project folder.
 
-**Figures policy:**
-- "Yes, figures" on the **presentation route** → use the **deck's own diagrams** (already
-  in the `.ppsx`, free, no extra time). **Do NOT also capture the book's page figures by
-  default** — that re-adds the ~2-min visual pass and kills the presentation route's speed.
-- Capture the **book's** page figures (the zoom visual pass) only when the user specifically
-  wants the book's figures, or on the **OCR route** where that's how figures are obtained —
-  and if it adds the pass, say so in the estimate (~+2 min).
+## Summary style (MANDATORY — this is what "summary" means here)
+The output is a **study summary (Lernzettel style)** — NOT a paraphrase, retelling or
+transcript of the book. A document that follows the book sentence by sentence is WRONG.
+1. **Telegraphic, not prose.** Bullets and fragments. No full sentences unless unavoidable.
+   No intro/outro, no "this chapter covers…", no commentary about the book.
+2. **Keep all the information, drop the words.** Every definition, rule, term, formula,
+   number, list of types/steps, cause → effect, pro/con and named example stays. Cut
+   repetition, filler, lead-in text, decoration and the **exercises** (Aufgaben /
+   Aufgabenstellungen / Übungen) — skip exercises entirely unless the user asks for them.
+3. **Key term first, in bold:** `**Begriff:** Definition in ≤ 15 words`. One idea per bullet,
+   max 2 lines.
+4. **Shorthand:** → (führt zu), = (ist), ↑ ↓, ≥, z. B.; enumerations on one line ("A, B, C").
+5. **Structure = the book's own headings** (same numbering, with the page reference).
+6. **Comparisons are tables:** Vorteile/Nachteile, Typen, Vergleiche → a table, never paragraphs.
+7. **Examples in one short line** ("Bsp.: …").
+8. **Length:** about **70–90 words per BOOK page** in the document; the builder hard-fails above
+   110 words/page (exit code 3) — then merge and shorten, but **never drop facts to get under it.**
+9. **Completeness check before building:** walk the source page by page — every heading, bold
+   term, definition, list and figure must appear (shortened). Only exercises and decoration
+   may be missing.
+
+Example — WRONG (book-style prose): *"Neue Märkte: Ehemalige Sowjetrepubliken, Indien, China und
+viele Länder Asiens, Lateinamerikas und Afrikas haben sich dem Weltmarkt geöffnet."* /
+*"Die Globalisierung wirkt auf Ökonomie, Ökologie und Gesellschaft."*
+RIGHT (summary style): `**Neue Märkte:** Ex-UdSSR, Indien, China, Asien/Lateinamerika/Afrika → Öffnung
+zum Weltmarkt` / `**Auswirkungen:** Ökonomie, Ökologie, Gesellschaft`.
+
+## Figures & models (included by default)
+Every informational **figure, model, diagram, chart, schema or process flow** on the pages in
+scope goes into the document **as the book's own image** — never retype a diagram as text
+boxes or lists. Also embed any table too complex to rebuild cleanly; simple tables (≤ 4
+columns, short cells) are rebuilt as real Word tables instead. Skip decorative stock photos,
+logos, icons, QR codes and anything that belongs to an exercise.
+- **Figure pass (all routes):** figures are not in the extracted text (and on these viewers
+  vector diagrams/tables are drawn as shapes, not image files), so after the text step visit
+  each page in scope in the viewer — same paced setup as the visual-reading fallback (close the
+  Lernmaterialien panel, fit the page, next-page arrow, wait ~2.2 s) — and for each
+  informational figure take a `zoom` of just that figure. This also double-checks the text.
+- **Crop quality:** region slightly generous so no edge, title or legend is cut off; ≥ ~800 px
+  wide. Look at every crop — if any edge is clipped, redo it with a larger region.
+- Every image result prints a **file path** — copy the file to the working folder with a
+  meaningful name (`fig_p48_marktuebersicht.png`) and add a `figure` block exactly where it
+  belongs, caption = `Titel (S. N)`.
+- **Presentation route:** the deck is used for the TEXT only. Its slide shapes can't be exported
+  as images reliably, so figures still come from the book pages via the figure pass.
+- ~2–3 s per page → about **+2–3 min per 50 pages**; included in the times below. If the user
+  says "no figures", skip the pass (and subtract that time).
 
 ## Always take the fastest route to the content (speed ladder)
 Minimising the user's time is the whole point. For the requested topic/pages, use the
@@ -114,19 +155,20 @@ search in step 1a):
    → slowest, hands-free but minutes; minimise by reading ONLY the located pages.
 Tell the user upfront which route applies and the rough time, so expectations are set.
 
-**Realistic safe-max times (50 pages, finished Word summary — paced, low risk):**
+**Realistic safe-max times (50 pages, finished document — paced, low risk):**
 
-| Route | Finished summary | Account risk |
-|-------|------------------|--------------|
-| 1. Presentation (`.ppsx`) | ~2 min | ~none (normal downloads) |
-| 2. Text layer (Hölzel) | ~2–3 min | low (acts like a reader) |
-| 3. OCR (`ocrFast`, TRAUNER) | ~2.5–3 min | low–moderate |
-| 4. Visual reading (native/Best Shots) | ~3–5 min | low (uses the real reader) |
+| Route | With figures (default) | No figures | Account risk |
+|-------|------------------------|------------|--------------|
+| 1. Presentation (`.ppsx`) | ~4–6 min | ~2 min | ~none for the deck; figure pass = normal viewing |
+| 2. Text layer (Hölzel) | ~4–6 min | ~2–3 min | low (acts like a reader) |
+| 3. OCR (`ocrFast`, TRAUNER) | ~5–7 min | ~3 min | low–moderate |
+| 4. Visual reading (native/Best Shots) | ~4–6 min | ~3–5 min | low (uses the real reader) |
 
-Two walls set these and can't be beaten while staying safe: the **~1 page/s** safe fetch
-rate (faster → ban risk climbs) and the **~1–2 min** the model needs to actually write the
-summary (shared by every route — it's why nothing goes below ~1.5 min). The real speed lever
-is **route selection** (reach for a presentation), not pushing a single route harder.
+(On route 4 the text is read during the same page visit that finds the figures, so figures add
+little there.) Walls that can't be beaten while staying safe: the **~1 page/s** safe fetch/visit
+rate (faster → ban risk climbs), the **figure pass** (~2–3 s/page, one visit per page in scope),
+and the **~1–2 min** the model needs to write the summary (a shorter, telegraphic summary
+writes a bit faster). The real speed lever is **route selection** (reach for a presentation).
 
 ## Procedure
 
@@ -174,6 +216,11 @@ Before extracting pages, see whether the chapter already has a publisher present
   the OCR/visual page extraction below unless no presentation covers the chapter.
 - If the deck is too sparse for the depth asked, say so and offer to supplement from
   the pages (OCR / method A).
+- **Completeness check:** a deck is a condensed view. Compare the headings of the requested
+  pages (page headings from the search/TOC/viewer) with what the deck covers; for any heading
+  the deck skips, take that part from the pages (OCR / method A) so no information is lost.
+- The deck is used for **text only** — figures still come from the book pages (see
+  "Figures & models").
 
 ### 2. Detect the viewer and confirm text is extractable (fallback: no matching presentation)
 Run this in the book tab (`javascript_tool`):
@@ -321,21 +368,37 @@ If `svg text` > 0 (some publishers), read `svg text` content in document order a
 advance pages with the next-page control. Confirm the first page matches the
 screenshot before looping. (Verify on first use.)
 
-### Build an exportable document (Word/PDF)
-Ensure the deps are present first (self-heal):
-`python3 -c "import docx, PIL" 2>/dev/null || pip3 install python-docx Pillow`.
-If install fails (restricted env), fall back to a Markdown summary and tell the user.
-Then build the .docx programmatically: English
-(or German) summary, **rebuild vector tables as real Word tables** (cleaner than an
-image), and embed the `zoom` figure crops with captions. Save into the project
-folder so it opens in the app; send it with SendUserFile. Export to PDF if asked.
+### Build the document (Word/PDF) — ALWAYS with the bundled builder
+Do **not** improvise `python-docx` code — use `build_summary_docx.py`, which guarantees a clean,
+consistent layout (title block, numbered headings with page refs, tight bullets, tables with a
+header row that never split across pages, figures with captions, footer with source + page
+number) and enforces the length limit.
+1. Deps (self-heal): `python3 -c "import docx, PIL" 2>/dev/null || pip3 install python-docx Pillow`.
+   If that fails (restricted environment), fall back to a Markdown file and tell the user.
+2. Locate the builder (it ships in this skill's folder):
+   `find ~/.claude -name build_summary_docx.py -path '*digi4school-summarizer*' 2>/dev/null | head -1`
+   If nothing is found, download it:
+   `curl -fsSL https://raw.githubusercontent.com/jamesstaaa/digi4school-summarizer/main/skills/digi4school-summarizer/build_summary_docx.py -o build_summary_docx.py`
+3. Write the summary as a **JSON spec** (format and example in the script's docstring):
+   `title`, `subtitle`, `source`, **`source_pages`** (number of BOOK pages summarised — required
+   for the length guard) and `blocks`: `h1`/`h2`/`h3` (+ `pages`), `bullets` (a list right after a
+   bullet = its sub-bullets), `table` (`header`, `rows`, `widths`; `\n- ` inside a cell = bullets),
+   `figure` (`path`, `caption`, `width_cm`), `note` (a shaded "Merke" box), `pagebreak`.
+   Inline `**bold**` only. Put each figure block where the figure belongs in the text.
+4. Run `python3 build_summary_docx.py spec.json "<name>.docx"`. **Exit code 3 = too long** →
+   tighten (merge bullets, shorten, drop filler — never drop facts) and rebuild until it passes.
+5. **PDF** (if chosen): `soffice --headless --convert-to pdf --outdir <dir> "<name>.docx"` when
+   LibreOffice exists; otherwise deliver the `.docx` and tell the user to use *File ▸ Save as PDF*.
+6. Save the file in the project/working folder and send it with SendUserFile. File name:
+   `<Buch>_<Thema-oder-Seiten>.docx`.
 
 ### 4. Deliver what the user asked for
 - **Honour the export format chosen in step 2** (Word / PDF / chat). Default is a **Word
   file** — do NOT write the whole summary into chat unless the user explicitly picked "chat."
 - Keep the page the text came from so you can cite "p. N" when useful.
-- **Summary / key points**: summarize per chapter/section, in the book's own
-  language by default (see Hard rules). Only content from the pages — no outside facts.
+- **Summary / key points**: follow **"Summary style"** above exactly — telegraphic bullets and
+  tables under the book's own headings, in the book's own language, only content from the
+  pages — no outside facts, no paraphrased prose. Figures/models embedded per **"Figures & models."**
 - **Flashcards / vocab / quiz**: generate from the extracted text; offer to save
   as a file (CSV/Markdown) in the current project.
 - **Raw text**: write to a file rather than dumping huge text into chat.
