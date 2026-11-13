@@ -112,7 +112,11 @@ transcript of the book. A document that follows the book sentence by sentence is
    max 2 lines.
 4. **Shorthand:** → (führt zu), = (ist), ↑ ↓, ≥, z. B.; enumerations on one line ("A, B, C").
 5. **Structure = the book's own headings** (same numbering, with the page reference).
-6. **Comparisons are tables:** Vorteile/Nachteile, Typen, Vergleiche → a table, never paragraphs.
+6. **Tables, models and comparisons come from the BOOK as images — never retype them.** If the
+   book shows a table, comparison, Vorteile/Nachteile box, model, scheme, chart or process flow,
+   embed the book's own image of it (see "Figures & models") and do NOT also retype its content
+   as bullets or a Word table. Only when the book presents a comparison as running text (no
+   table/graphic) may you build a small table yourself, using only the book's wording.
 7. **Examples in one short line** ("Bsp.: …").
 8. **Length:** about **70–90 words per BOOK page** in the document; the builder hard-fails above
    110 words/page (exit code 3) — then merge and shorten, but **never drop facts to get under it.**
@@ -127,25 +131,37 @@ RIGHT (summary style): `**Neue Märkte:** Ex-UdSSR, Indien, China, Asien/Lateina
 zum Weltmarkt` / `**Auswirkungen:** Ökonomie, Ökologie, Gesellschaft`.
 
 ## Figures & models (when the user said yes)
-If the user wants figures (step 2 — ask in their language), then every informational **figure,
-model, diagram, chart, schema or process flow** on the pages in scope goes into the document
-**as the book's own image** — never retype a diagram as text boxes or lists. Also embed any table too complex to rebuild cleanly; simple tables (≤ 4
-columns, short cells) are rebuilt as real Word tables instead. Skip decorative stock photos,
-logos, icons, QR codes and anything that belongs to an exercise.
-- **Figure pass (all routes):** figures are not in the extracted text (and on these viewers
-  vector diagrams/tables are drawn as shapes, not image files), so after the text step visit
-  each page in scope in the viewer — same paced setup as the visual-reading fallback (close the
-  Lernmaterialien panel, fit the page, next-page arrow, wait ~2.2 s) — and for each
-  informational figure take a `zoom` of just that figure. This also double-checks the text.
-- **Crop quality:** region slightly generous so no edge, title or legend is cut off; ≥ ~800 px
-  wide. Look at every crop — if any edge is clipped, redo it with a larger region.
-- Every image result prints a **file path** — copy the file to the working folder with a
-  meaningful name (`fig_p48_marktuebersicht.png`) and add a `figure` block exactly where it
-  belongs, caption = `Titel (S. N)`.
-- **Presentation route:** the deck is used for the TEXT only. Its slide shapes can't be exported
-  as images reliably, so figures still come from the book pages via the figure pass.
-- ~2–3 s per page → about **+2–3 min per 50 pages** (the "with figures" column below). If the
-  user answers "no", skip the figure pass entirely and use the "no figures" time.
+**The user's rule: the information must come ONLY from the book, and anything the book shows as
+a table, model, scheme, diagram or chart goes into the document as the BOOK'S OWN IMAGE — never
+retyped, redrawn or rebuilt by you.** The book's image shows it better and can't contain my
+transcription errors. This covers: tables (incl. Vorteile/Nachteile boxes, Zollarten, Handels-
+barrieren…), models, process flows, schemes, charts/statistics, maps and info-boxes that are
+graphics. Skip: decorative stock photos, logos, icons, QR codes, portraits, and anything that
+belongs to an exercise (Aufgaben).
+- **Check every page against its IMAGE, not only the OCR text.** OCR misreads numbers (e.g. 9,58
+  read as 9,538) and merges columns. For every page in scope, look at a full-page render (below)
+  and compare it with your summary: every heading, bold term, number, list and box. Numbers,
+  percentages and years MUST be read from the image. Fix the summary where they differ.
+- **Page renderer (TRAUNER / outlined-SVG viewers, works with the CSP):** inject `D4S.region` (code
+  below, after the OCR module). `await D4S.region(page, x, y, w, h, {outW:1600})` draws that region
+  of the page — photos included — at high resolution as a full-frame overlay; then
+  `computer zoom` with `save_to_disk:true` on the overlay returns a sharp image file. Page
+  coordinates are in book units (a page is **909 × 1286**). Use `region(page,0,0,909,1286,{outW:1400})`
+  + `zoom [137,0,719,823]` for a whole-page view; coordinates you read off that whole-page image
+  (924 × 1307 px) are ≈ page units (× 0.98). Cut each table/model with a small margin so no edge
+  or title is clipped; capture the overlay with `zoom [0,0,viewportW,viewportH]`.
+- **Trim and look:** trim the white margins (Pillow bbox of non-white pixels + ~8 px padding),
+  make a contact sheet of all crops and LOOK at it — redo any clipped or blurry crop.
+- Copy each crop into the working folder with a meaningful name (`f05_p35_exportlaender.png`) and
+  add it where it belongs: `figure` (one image, `width_cm`, optional `max_h_cm`) or `figures` (several
+  small ones side by side); caption = `Titel (S. N)`. Put the image right after the bullet it
+  belongs to. Wide tables: `width_cm` ≈ 15–17. Narrow ones: ≈ 9–12.
+- **Presentation route:** the deck gives TEXT only; slide shapes can't be exported as images, so
+  figures/tables still come from the book pages with the renderer above.
+- **Other viewers** (no renderer): the same via the viewer — fit the page, jump to the page, `zoom`
+  on the figure region with `save_to_disk:true`.
+- Cost: about one page-view per page in scope (~3 s) plus ~2 s per crop ≈ **+3–5 min per 50 pages**
+  (the "with figures" column below). If the user answers "no", skip all of this and use "no figures".
 
 ## Always take the fastest route to the content (speed ladder)
 Minimising the user's time is the whole point. For the requested topic/pages, use the
@@ -167,10 +183,14 @@ Tell the user upfront which route applies and the rough time, so expectations ar
 
 | Route | With figures | No figures | Account risk |
 |-------|------------------------|------------|--------------|
-| 1. Presentation (`.ppsx`) | ~4–6 min | ~2 min | ~none for the deck; figure pass = normal viewing |
-| 2. Text layer (Hölzel) | ~4–6 min | ~2–3 min | low (acts like a reader) |
-| 3. OCR (`ocrFast`, TRAUNER) | ~5–7 min | ~3 min | low–moderate |
-| 4. Visual reading (native/Best Shots) | ~4–6 min | ~3–5 min | low (uses the real reader) |
+| 1. Presentation (`.ppsx`) | ~6–9 min | ~2 min | ~none for the deck; figure pass = normal viewing |
+| 2. Text layer (Hölzel) | ~6–9 min | ~2–3 min | low (acts like a reader) |
+| 3. OCR (`ocrFast`, TRAUNER) | ~7–10 min | ~3 min | low–moderate |
+| 4. Visual reading (native/Best Shots) | ~5–8 min | ~3–5 min | low (uses the real reader) |
+
+(Measured on a real run, 21 pages of a TRAUNER book: text extraction ~1.5 min; checking each page
+image and cropping 17 book tables/models/charts took most of the rest. With figures, the checking
+pass over every page is what takes time — it is what makes the numbers and tables correct.)
 
 (On route 4 the text is read during the same page visit that finds the figures, so figures add
 little there.) Walls that can't be beaten while staying safe: the **~1 page/s** safe fetch/visit
@@ -229,6 +249,10 @@ Before extracting pages, see whether the chapter already has a publisher present
   the deck skips, take that part from the pages (OCR / method A) so no information is lost.
 - The deck is used for **text only** — figures still come from the book pages (see
   "Figures & models").
+- **Exact page ranges:** a deck follows the chapter, not page numbers. If the user asked for exact
+  pages (e.g. "S. 30–50") that start or end mid-chapter, or the deck's content differs from the
+  pages, use the **page text** (OCR / method A) for those pages instead — the user wants the
+  information of THOSE pages, from the book. Use a deck only when the request is a whole chapter/topic.
 
 ### 2. Detect the viewer and confirm text is extractable (fallback: no matching presentation)
 Run this in the book tab (`javascript_tool`):
@@ -337,14 +361,59 @@ OCRs it with tesseract.js. Steps (via the Chrome `javascript_tool`):
   S.text = function () {
     return Object.keys(S.pages).map(Number).sort((a, b) => a - b).map((p) => `\n===== Seite ${p} =====\n${S.pages[p]}`).join('\n');
   };
+  // Show OCR text of pages a..b in a full-screen <article> overlay, so the page-text tool can return it
+  // (a JS return value is cut off after ~1.5k chars; the overlay gives ~25k chars per call = ~10 pages).
+  S.show = function (a, b) {
+    let o = document.getElementById('d4s-out'); if (o) o.remove();
+    o = document.createElement('div'); o.id = 'd4s-out';
+    o.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:#fff;color:#000;overflow:auto;padding:12px;';
+    const art = document.createElement('article'), pre = document.createElement('pre');
+    pre.style.cssText = 'white-space:pre-wrap;font:12px monospace;margin:0';
+    pre.textContent = Object.keys(S.pages).map(Number).filter((p) => p >= a && p <= b).sort((x, y) => x - y)
+      .map((p) => `\n===== Seite ${p} =====\n${S.pages[p]}`).join('\n');
+    art.appendChild(pre); o.appendChild(art); document.body.appendChild(o); return pre.textContent.length;
+  };
+  S.hide = function () { const o = document.getElementById('d4s-out'); if (o) o.remove(); };
+  // Render a REGION (book units; a page = 909 x 1286) of a page at high resolution, photos INCLUDED, as a
+  // full-frame overlay, for a sharp `zoom` screenshot of a table / model / chart.
+  S._cache = S._cache || {};
+  S.region = async function (page, x, y, w, h, opts = {}) {
+    const offset = opts.offset ?? 2, outW = opts.outW ?? 1600, svgN = page + offset;
+    let svg = S._cache[svgN];
+    if (!svg) {
+      svg = await (await fetch(`${S._base}/${svgN}.svg`, { credentials: 'include' })).text();
+      const refs = [...new Set([...svg.matchAll(/(?:xlink:href|href)="([^"#][^"]*\.(?:png|jpe?g|gif))"/gi)].map((m) => m[1]))];
+      for (const r of refs) {
+        const b = await (await fetch(new URL(r, S._base + '/').href, { credentials: 'include' })).blob();
+        const d = await new Promise((res) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.readAsDataURL(b); });
+        svg = svg.split('"' + r + '"').join('"' + d + '"');
+      }
+      S._cache[svgN] = svg;
+    }
+    const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+    const img = new Image(); await new Promise((r) => { img.onload = r; img.onerror = r; img.src = url; });
+    const k = outW / w, c = document.createElement('canvas');
+    c.width = Math.round(w * k); c.height = Math.round(h * k);
+    const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+    ctx.drawImage(img, -x * k, -y * k, 909 * k, 1286 * k); URL.revokeObjectURL(url);
+    let o = document.getElementById('d4s-reg'); if (o) o.remove();
+    o = document.createElement('div'); o.id = 'd4s-reg';
+    o.style.cssText = 'position:fixed;left:0;top:0;width:100vw;height:100vh;z-index:2147483647;background:#fff;display:flex;align-items:flex-start;justify-content:center;';
+    c.style.cssText = 'max-width:100vw;max-height:100vh;width:auto;height:auto;object-fit:contain;';
+    o.appendChild(c); document.body.appendChild(o);
+    return { page, region: [x, y, w, h], vw: innerWidth, vh: innerHeight };
+  };
+  S.regionOff = function () { const o = document.getElementById('d4s-reg'); if (o) o.remove(); };
 })();
 ```
 2. Confirm the offset once (navigate `?page=42`, read `#txtPage`), then OCR in
-   **~12-page chunks** so each call stays under the ~45s tool timeout — the worker
-   pool is cached on `window` across calls:
-   `await D4S.ocrFast(40,51,{offset:2});` … `await D4S.ocrFast(52,63,{offset:2});`
-3. Collect with `D4S.text()` and summarise/transform from that.
-   ~1–1.5 min for 50 pages (first chunk +~11s for the model load); `{lang:'eng'}` for English.
+   **~8-page chunks** (13 pages ran into the ~45 s tool limit; the OCR keeps running in the page
+   if a call times out — just check `Object.keys(D4S.pages)` afterwards). The worker pool is cached
+   on `window` across calls: `await D4S.ocrFast(40,47,{offset:2});` … `await D4S.ocrFast(48,55,{offset:2});`
+3. Read the text with `D4S.show(a,b)` (≤ ~10 pages) and then the page-text tool, one range at a
+   time (`D4S.hide()` afterwards). ~1.5 min for 21 pages measured (first chunk +~11 s for the
+   model load); `{lang:'eng'}` for English. Always check numbers against the page image (see
+   "Figures & models").
 
 **Pacing & safety policy (do NOT remove — it's what keeps this looking human):**
 - `ocrFast` **serialises fetch STARTS ~1–1.7 s apart** (minGap 1000 + jitter 700) and
@@ -390,8 +459,10 @@ number) and enforces the length limit.
 3. Write the summary as a **JSON spec** (format and example in the script's docstring):
    `title`, `subtitle`, `source`, **`source_pages`** (number of BOOK pages summarised — required
    for the length guard) and `blocks`: `h1`/`h2`/`h3` (+ `pages`), `bullets` (a list right after a
-   bullet = its sub-bullets), `table` (`header`, `rows`, `widths`; `\n- ` inside a cell = bullets),
-   `figure` (`path`, `caption`, `width_cm`), `note` (a shaded "Merke" box), `pagebreak`.
+   bullet = its sub-bullets), `figure` (the BOOK's image of a table/model/chart: `path`, `caption`,
+   `width_cm`, optional `max_h_cm`), `figures` (several small images side by side), `note` (a shaded
+   "Aha!/Merke" box), `table` (`header`, `rows`, `widths`; `\n- ` inside a cell = bullets) — **only for
+   a comparison the book gives as running text, never to retype a table the book shows**, `pagebreak`.
    Inline `**bold**` only. Put each figure block where the figure belongs in the text.
 4. Run `python3 build_summary_docx.py spec.json "<name>.docx"`. **Exit code 3 = too long** →
    tighten (merge bullets, shorten, drop filler — never drop facts) and rebuild until it passes.

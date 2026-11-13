@@ -16,7 +16,8 @@ Spec (JSON):
     {"bullets": ["**Begriff:** kurze Definition", ["Unterpunkt", "Unterpunkt"], "naechster Punkt"]},
     {"table": {"header": ["Zollart", "Funktion"], "rows": [["**Schutzzoll**", "schuetzt Inlandsproduzenten"]],
                "widths": [1, 3]}},
-    {"figure": {"path": "/abs/path/fig.png", "caption": "Markteintritt (S. 48)", "width_cm": 12}},
+    {"figure": {"path": "/abs/path/fig.png", "caption": "Markteintritt (S. 48)", "width_cm": 12, "max_h_cm": 10.5}},
+    {"figures": [{"path": "a.png", "width_cm": 5}, {"path": "b.png", "width_cm": 5}]},   # several small figures side by side
     {"note": "**Merke:** ..."},
     {"pagebreak": true}
   ]
@@ -153,6 +154,8 @@ def _count_words(blocks):
             n += sum(w(c) for r in tb.get("rows", []) for c in r)
         if "figure" in b:
             n += w(b["figure"].get("caption", ""))
+        if "figures" in b:
+            n += sum(w(f.get("caption", "")) for f in b["figures"])
     return n
 
 
@@ -238,6 +241,8 @@ def build(spec, out_path):
             _table(doc, b["table"])
         elif "figure" in b:
             _figure(doc, b["figure"])
+        elif "figures" in b:
+            _figures_row(doc, b["figures"])
         elif "note" in b:
             t = doc.add_table(rows=1, cols=1)
             t.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -319,8 +324,9 @@ def _figure(doc, fg):
         w_px, h_px = im.size
     width = min(float(fg.get("width_cm", 12)), USABLE_CM)
     height = width * h_px / w_px
-    if height > MAX_FIG_HEIGHT_CM:
-        width *= MAX_FIG_HEIGHT_CM / height
+    max_h = float(fg.get("max_h_cm", MAX_FIG_HEIGHT_CM))
+    if height > max_h:
+        width *= max_h / height
     p = doc.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p.paragraph_format.space_before = Pt(4)
@@ -332,6 +338,37 @@ def _figure(doc, fg):
         c.alignment = WD_ALIGN_PARAGRAPH.CENTER
         c.paragraph_format.space_after = Pt(6)
         _runs(c, fg["caption"], size=8.5, color=GREY, italic=True)
+
+
+def _figures_row(doc, items):
+    """Several figures side by side (borderless one-row table), each with an optional caption."""
+    from PIL import Image
+
+    t = doc.add_table(rows=1, cols=len(items))
+    t.alignment = WD_TABLE_ALIGNMENT.CENTER
+    t.autofit = False
+    for cell, fg in zip(t.rows[0].cells, items):
+        path = fg["path"]
+        if not os.path.exists(path):
+            raise SystemExit("figure not found: " + path)
+        with Image.open(path) as im:
+            w_px, h_px = im.size
+        want = float(fg.get("width_cm", 5))
+        width = want
+        max_h = float(fg.get("max_h_cm", MAX_FIG_HEIGHT_CM))
+        if width * h_px / w_px > max_h:
+            width = max_h * w_px / h_px
+        cell.width = Cm(want + 0.2)
+        p = cell.paragraphs[0]
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p.paragraph_format.space_after = Pt(1)
+        p.add_run().add_picture(path, width=Cm(width))
+        if fg.get("caption"):
+            c = cell.add_paragraph()
+            c.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            _runs(c, fg["caption"], size=8.5, color=GREY, italic=True)
+    _row_flag(t.rows[0], "w:cantSplit")
+    doc.add_paragraph().paragraph_format.space_after = Pt(4)
 
 
 def main():
