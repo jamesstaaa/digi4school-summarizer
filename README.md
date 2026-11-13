@@ -67,18 +67,24 @@ separate **standalone app**, which a Claude Code skill cannot be — see
 
 ## Install
 
-### ✅ Recommended — one line in a Terminal
+### ✅ Recommended — one line in a Terminal (install **and** update)
 
 Open a **Terminal** (the macOS/Linux terminal app — **not** the Claude app) and paste this
 single line, then press Enter:
 
 ```bash
-curl -fsSL https://github.com/jamesstaaa/digi4school-summarizer/archive/refs/heads/main.tar.gz | tar -xz -C /tmp && mkdir -p "$HOME/.claude/skills" && rm -rf "$HOME/.claude/skills/digi4school-summarizer" && cp -R /tmp/digi4school-summarizer-main/skills/digi4school-summarizer "$HOME/.claude/skills/" && rm -rf /tmp/digi4school-summarizer-main && { python3 -m pip install --user --quiet python-docx Pillow 2>/dev/null || true; } && echo "✅ Installed — restart Claude, then use it in the Code area."
+rm -rf /tmp/d4s && mkdir -p /tmp/d4s && curl -fsSL https://github.com/jamesstaaa/digi4school-summarizer/archive/refs/heads/main.tar.gz -o /tmp/d4s/skill.tgz && tar -xzf /tmp/d4s/skill.tgz -C /tmp/d4s && test -d /tmp/d4s/digi4school-summarizer-main/skills/digi4school-summarizer && mkdir -p "$HOME/.claude/skills" && rm -rf "$HOME/.claude/skills/digi4school-summarizer" && cp -R /tmp/d4s/digi4school-summarizer-main/skills/digi4school-summarizer "$HOME/.claude/skills/" && rm -rf /tmp/d4s && { python3 -m pip install --user --quiet python-docx Pillow 2>/dev/null || true; } && test -f "$HOME/.claude/skills/digi4school-summarizer/build_summary_docx.py" && echo "✅ Installed / updated — start a NEW Claude Code session (Code tab), then just ask for a summary." || echo "❌ Install failed (your existing install, if any, was kept) — check your internet connection and run the line again."
 ```
 
-It downloads the skill from GitHub, copies it into `~/.claude/skills/`, installs the Python
-deps for the Word output, and cleans up. Then **restart Claude** and use it in the **Code**
-area (the Code tab of the desktop app, or the `claude` CLI) — not the regular chat.
+It downloads the latest skill from GitHub, copies it into `~/.claude/skills/` (the skill
+folder: `SKILL.md` + the Word builder), installs the Python packages for the Word output,
+checks that everything arrived, and cleans up. It prints **✅** when it worked and **❌** if
+not. Then **start a new Claude Code session** and use it in the **Code** area (the Code tab of
+the desktop app, or the `claude` CLI) — not the regular chat.
+
+**Updating:** paste the **same line again** — it replaces your old copy with the latest one.
+Skills load when a session starts, so open a **new** Code session afterwards. (Plugin route:
+`claude plugin update`.)
 
 ### Alternative — as a Claude Code plugin (`claude` CLI / terminal only)
 
