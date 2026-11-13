@@ -72,14 +72,23 @@ When the user asks for a summary (a topic or a page range), do this:
 1. **Pre-flight FIRST, silently.** Before extracting anything, resolve the scope (§1a)
    and check the route (§1b): how many chapters it spans, whether presentations cover
    them, which route applies. Do this quickly — **do NOT narrate the mechanics.**
-2. **Then, before you start, tell the user in plain terms:**
-   - what you're about to do + the scope — *"Starting the summary of pages 50–100 now."*
+2. **Then, before you start, ask the user (plain terms) and WAIT for the answer:**
+   - what you're about to do + the scope — *"Ready to summarise pages 50–100."*
    - a rough **time estimate** from the route you found (≈2–4 min if decks cover it;
      ≈5–7 min if it needs OCR + book figures — see the route-times table below).
-   - and **ask one thing: include the book's pictures/diagrams? (yes/no).**
-   Keep it to the **what + how long**. The user does NOT care *how* (presentations vs
-   OCR vs pacing) — never explain the extraction method, routes, or safety mechanics.
-3. **Then just do it** and deliver the Word doc.
+   - **how should it be exported — Word (.docx), PDF, or straight into the chat?** (default Word)
+   - **include the book's pictures/diagrams? (yes/no).**
+   Keep it to the **what + how long + those two choices**. The user does NOT care *how*
+   (presentations vs OCR vs pacing) — never explain the extraction method, routes, or safety.
+3. **Then do it and deliver in the chosen format.**
+
+**Export rule (IMPORTANT — the user wants this):** by default always produce a **file**
+(Word or PDF), and **NEVER write the full summary into the chat unless the user explicitly
+chose "chat."** Ask the export format up front (step 2) — do NOT dump the whole summary into
+the message and only then offer a file. Mapping: **Word** → build with `python-docx`; **PDF**
+→ build the Word doc then convert to PDF (e.g. `export_pdf`, LibreOffice `soffice --headless
+--convert-to pdf`, or render Markdown→PDF); **chat** → write it in the message as normal.
+Deliver the file with SendUserFile and save it in the project folder.
 
 **Figures policy:**
 - "Yes, figures" on the **presentation route** → use the **deck's own diagrams** (already
@@ -322,6 +331,8 @@ image), and embed the `zoom` figure crops with captions. Save into the project
 folder so it opens in the app; send it with SendUserFile. Export to PDF if asked.
 
 ### 4. Deliver what the user asked for
+- **Honour the export format chosen in step 2** (Word / PDF / chat). Default is a **Word
+  file** — do NOT write the whole summary into chat unless the user explicitly picked "chat."
 - Keep the page the text came from so you can cite "p. N" when useful.
 - **Summary / key points**: summarize per chapter/section, in the book's own
   language by default (see Hard rules). Only content from the pages — no outside facts.
