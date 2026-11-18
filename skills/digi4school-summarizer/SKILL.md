@@ -163,19 +163,19 @@ search in step 1a):
    → slowest, hands-free but minutes; minimise by reading ONLY the located pages.
 Tell the user upfront which route applies and the rough time, so expectations are set.
 
-**Realistic safe-max times (50 pages, finished document — paced, low risk):**
+**Realistic times (50 pages, finished document, requests paced as described below):**
 
-| Route | With figures | No figures | Account risk |
+| Route | With figures | No figures | What it does on the site |
 |-------|------------------------|------------|--------------|
-| 1. Presentation (`.ppsx`) | ~6–9 min | ~2 min | ~none for the deck; figure pass = normal viewing |
-| 2. Text layer (Hölzel) | ~6–9 min | ~2–3 min | low (acts like a reader) |
-| 3. OCR (`ocrFast`, TRAUNER) | ~6 min (est.) | ~3 min | low–moderate |
-| 4. Visual reading (native/Best Shots) | ~5–8 min | ~3–5 min | low (uses the real reader) |
+| 1. Presentation (`.ppsx`) | ~6–9 min | ~2 min | downloads one file; the figure pass reads page files |
+| 2. Text layer (Hölzel) | ~6–9 min | ~2–3 min | loads the pages the way the viewer does |
+| 3. OCR (`ocrFast`, TRAUNER) | ~6 min (est.) | ~3 min | fetches page files directly, one at a time |
+| 4. Visual reading (native/Best Shots) | ~5–8 min | ~3–5 min | uses the viewer as intended |
 
 (Only the OCR route was timed: 15 pages of a TRAUNER book with figures took **11.6 min** with the old flow —
 ~4 min of that was a hanging Word export and extra checks, ~1.3 min rewriting the summary a second
-time. The lean flow here should take **~6 min** — an estimate, not yet timed. Walls: ~1 page/s safe fetch
-rate, and ~2 min to write ~1,000 words. The other rows are rough estimates.)
+time. The lean flow here should take **~6 min** — an estimate, not yet timed. Walls: the ~1 page/s request rate,
+and ~2 min to write ~1,000 words. The other rows are rough estimates.)
 
 ## Procedure
 
@@ -319,8 +319,8 @@ OCRs it with tesseract.js. Steps (via the Chrome `javascript_tool`):
     const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
     ctx.scale(scale, scale); ctx.drawImage(img, 0, 0); URL.revokeObjectURL(url); return c;
   };
-  // Paced + parallel OCR. Fetch STARTS are serialised ~minGap+jitter apart (human-like, NEVER a
-  // burst); OCR runs in parallel across a worker pool (local, invisible to the server).
+  // Paced + parallel OCR. Page fetches start one at a time, ~minGap ms apart plus a small random
+  // offset, to keep server load low; OCR itself runs in parallel in the local browser.
   S.ocrFast = async function (start, end, opts = {}) {
     const offset = opts.offset ?? 2, scale = opts.scale || 2.5;
     const minGap = opts.minGapMs ?? 1000, jitter = opts.jitterMs ?? 700;
@@ -467,16 +467,18 @@ OCRs it with tesseract.js. Steps (via the Chrome `javascript_tool`):
    model load); `{lang:'eng'}` for English. Always check numbers against the page image (see
    "Figures & models").
 
-**Pacing & safety policy (do NOT remove — it's what keeps this looking human):**
-- `ocrFast` **serialises fetch STARTS ~1–1.7 s apart** (minGap 1000 + jitter 700) and
-  NEVER fetches pages in parallel. That paced, sequential, jittered pattern reads as a fast
-  skimmer, not a scraper — the one thing that would get an account flagged is firing many
-  page requests at once, so **never bypass the gate or fetch a whole book in a burst.**
-- **OCR parallelism (`workers`) is LOCAL only** — invisible to the server, safe for speed.
-  Default ≤4 workers to spare a weak laptop's RAM/CPU; raise only on strong hardware.
-- **Personal vs public:** default `minGapMs` ~1000 (≈1 page/s, fast-skim). For a PUBLIC/shared
-  build raise it to ~1500–2000 — the risk is the *aggregate* rate across many users, not one run.
-- **Scope tight:** only OCR the pages the topic needs (step 1a search), never the whole book.
+**Request pacing (keep this — it limits load on the publisher's servers):**
+- `ocrFast` fetches page files **one at a time, ~1–1.7 s apart** (`minGapMs` 1000 + a random 0–700 ms so
+  requests don't pile up on the same instant), and never fetches pages in parallel. Do not remove the
+  gate and do not fetch a whole book in one go.
+- **OCR parallelism (`workers`) runs only in the user's own browser** — it adds no requests to the
+  server. Default ≤ 4 workers to spare a weak laptop's RAM/CPU.
+- **Shared use:** default spacing is ~1 s per page; for a widely shared build raise `minGapMs` to
+  ~1500–2000, because the load adds up across many users.
+- **Scope tight:** only fetch the pages the topic needs (step 1a search), never the whole book.
+- **Be honest with the user about account risk:** automated access may go against digi4school's or the
+  publisher's terms of use, and the platform could limit or suspend the account. Pacing reduces the
+  load, it does **not** make this risk-free or allowed. If a user asks, say this plainly.
 Caveat: reading order on multi-column pages / tables can interleave (margin notes, table
 columns merge). Fine to summarise from; for clean raw text, treat as a draft and tidy. If
 tesseract.js is blocked (CSP) on some host, fall back to visual reading.

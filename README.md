@@ -34,6 +34,11 @@ separate **standalone app**, which a Claude Code skill cannot be — see
   on-screen reading of pages you are already entitled to view. Depending on where you live
   and the publisher's terms, automated extraction may be restricted — **you are responsible
   for using this within your local copyright law and digi4school's terms of use.**
+- **Account risk:** the skill drives your own logged-in browser session and requests page files one at a
+  time, spaced about 1–2 seconds apart to keep the load on the publisher's servers low. Automated
+  access may still go against digi4school's or the publisher's terms of use, and the platform could
+  limit or suspend your account. Spacing the requests reduces load; it does not make this allowed or
+  risk-free. Use it on your own books and your own account, only for the pages you need.
 - Provided as-is under the MIT license, with no warranty. If in doubt, check with your
   school or the publisher.
 
