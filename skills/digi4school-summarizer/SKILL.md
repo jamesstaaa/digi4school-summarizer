@@ -93,7 +93,13 @@ transcript of the book. A document that follows the book sentence by sentence is
 2. **Keep all the information, drop the words.** Every definition, rule, term, formula,
    number, list of types/steps, cause → effect, pro/con and named example stays. Cut
    repetition, filler, lead-in text, decoration and the **exercises** (Aufgaben /
-   Aufgabenstellungen / Übungen) — skip exercises entirely unless the user asks for them.
+   Aufgabenstellungen / Übungen) — skip the exercise QUESTIONS unless the user asks for them. Fact
+   text inside an exercise box (case/info text, e.g. a company or market description) is book content:
+   keep its facts as ONE labelled bullet ("Fallmaterial S. N: …").
+   **Keep the "why" with every fact.** A measure keeps its purpose, an example keeps its point, a list
+   keeps ALL its items and the names/countries it gives. Short must not become cryptic: "Ford Probe
+   (Name)" that no longer says why it was a flop is a LOST fact; "Metro: Modelle je Land" without the
+   four model names is a lost fact.
 3. **Key term first, in bold:** `**Begriff:** Definition in ≤ 15 words`. One idea per bullet,
    max 2 lines.
 4. **Shorthand:** → (führt zu), = (ist), ↑ ↓, ≥, z. B.; enumerations on one line ("A, B, C").
@@ -104,13 +110,17 @@ transcript of the book. A document that follows the book sentence by sentence is
    as bullets or a Word table. Only when the book presents a comparison as running text (no
    table/graphic) may you build a small table yourself, using only the book's wording.
 7. **Examples in one short line** ("Bsp.: …").
-8. **One tight pass — write it short the FIRST time:** about **70 words per BOOK page** (≈ 1,000 words
-   for 15 pages). Do NOT write a long draft and shorten it afterwards (that is a second full write,
+8. **One tight pass — write it short the FIRST time:** about **65–80 words per BOOK page** (≈ 1,000–1,100
+   words for 15 pages; measured: a first pass at 46 words/page lost about 20 small facts, restoring them
+   gave 72 words/page). Do NOT write a long draft and shorten it afterwards (that is a second full write,
    1–2 min wasted). While writing: never restate what an embedded image already shows; examples in one
    line; merge lead-in bullets; no asides (head counts, anecdote details) unless exam-relevant. The
-   builder hard-fails above 110 words/page (exit code 3) — then cut filler, **never facts**.
-9. **Completeness:** go through the OCR text heading by heading — every heading, bold term, definition,
-   list and number appears (shortened). Only exercises, decoration and what an image shows may be missing.
+   builder hard-fails above 110 words/page (exit code 3) — then cut filler, **never facts** — and prints a
+   CHECK line below 45 words/page: then re-read for lost facts (fine only on exercise-heavy pages).
+9. **Completeness pass BEFORE building (do not skip):** go through the page text page by page. For each
+   page tick off every heading, bold term, definition, number, named example (with its point), list item
+   and measure (with its purpose) in your summary and add what is missing. Only exercise questions,
+   decoration and what an embedded image shows may be absent.
 
 Example — WRONG (book-style prose): *"Neue Märkte: Ehemalige Sowjetrepubliken, Indien, China und
 viele Länder Asiens, Lateinamerikas und Afrikas haben sich dem Weltmarkt geöffnet."* /

@@ -25,6 +25,7 @@ Spec (JSON):
 Inline formatting: **bold** only. A list that directly follows a bullet string = its sub-bullets.
 Table cells may contain several lines separated by \\n (lines starting with "- " become bullets).
 Exit code 3 = file written but the summary is TOO LONG for the source pages -> tighten and rebuild.
+A CHECK line (exit 0) = suspiciously SHORT (< 45 words/page) -> look for dropped facts.
 """
 import json
 import os
@@ -44,6 +45,7 @@ WHITE = RGBColor(0xFF, 0xFF, 0xFF)
 USABLE_CM = 17.0          # A4 (21 cm) minus 2 x 2 cm margins
 MAX_FIG_HEIGHT_CM = 10.5
 DEFAULT_MAX_WORDS_PER_PAGE = 110
+DEFAULT_MIN_WORDS_PER_PAGE = 45   # below this: warn (facts may have been dropped), do not fail
 
 
 # ---------- low-level helpers ----------
@@ -386,6 +388,11 @@ def main():
         cap = float(spec.get("max_words_per_page", DEFAULT_MAX_WORDS_PER_PAGE))
         msg += f" for {pages} source pages = {per:.0f} words/page (limit {cap:.0f})"
         print(msg)
+        lo = float(spec.get("min_words_per_page", DEFAULT_MIN_WORDS_PER_PAGE))
+        if per < lo:
+            print(f"CHECK: only {per:.0f} words/page (< {lo:.0f}) - re-read the source pages for dropped facts "
+                  "(definitions, numbers, examples with their point, measures with their purpose). "
+                  "Fine only if the pages are mostly exercises or images.")
         if per > cap:
             print(f"TOO LONG: tighten to <= {int(cap * pages)} words (cut filler, merge bullets, drop exercises) and rebuild.")
             raise SystemExit(3)
