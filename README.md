@@ -8,6 +8,10 @@ into an AI by hand.
 
 > **You log in yourself. The skill never sees or types your password.**
 
+> **Status — early version.** It has been run end to end on **one book** (Praxisblicke Betriebswirtschaft IV,
+> TRAUNER, pages 30–65). Other books and readers may work or may not; see [What has been tested](#what-has-been-tested).
+> **It only works inside Claude Code, not in the normal Claude app.**
+
 ---
 
 ## ⚠️ Runs in Claude Code ONLY — not the regular Claude app
@@ -47,12 +51,12 @@ separate **standalone app**, which a Claude Code skill cannot be — see
 ## What it does
 
 1. **Locate** — you give a topic or page range. If you give a topic, it finds the pages
-   using the book's own search (works even on image-only books).
+   using the book's own search (tested on TRAUNER books).
 2. **Extract the fastest way** (see the speed ladder below) — a ready-made chapter
    presentation if one exists, otherwise the reader's text layer, otherwise OCR, otherwise
    on-screen reading.
 3. **Summarize** — a short, telegraphic **study summary** (bullets under the book's own headings, key
-   terms in bold, about 70 words per book page), in the **book's own language**, using **only** what's in
+   terms in bold, about 65–80 words per book page), in the **book's own language**, using **only** what's in
    the book. It asks one question first — in your language — whether to include the book's figures, models
    and tables (embedded as the book's own images, never retyped). Delivered as a clean **Word document**.
 
@@ -142,19 +146,33 @@ Summarize Praxisblicke IV pages 40–55 in German, with the figures.
 The skill will open the book in the browser (log in if asked), find the part you named,
 pick the fastest extraction route, and give you a `.docx`.
 
-## How it works — the speed ladder
+## How it works
 
-It always takes the **highest available** route and never does slower work than it has to:
+For the pages you ask for, it takes the **highest route that works** and never does slower work than it has to:
 
-| Route | When it applies | Speed |
-|------|-----------------|-------|
-| **1. Ready-made deck** (chapter presentation `.ppsx`, or a file you send) | a presentation covers the chapter | ~1–2 min |
-| **2. Real text layer** | reader has selectable text (e.g. Hölzel) | near-instant |
-| **3. OCR** | outlined-SVG pages + reader allows it (e.g. TRAUNER) | ~8 s/page, automated |
-| **4. On-screen reading** | OCR blocked by the reader (e.g. digi4school native) | slowest, but still hands-free |
+1. a chapter presentation (`.ppsx`) if the book has one for that chapter,
+2. otherwise the reader's real text layer,
+3. otherwise OCR of the rendered pages (when the reader allows it),
+4. otherwise reading the pages on screen.
 
-Validated on three publishers (Hölzel, TRAUNER, digi4school native). Others are auto-detected
-and handled by the same logic, and may need a one-time confirmation on first use.
+## What has been tested
+
+| Route | For | Status |
+|------|-----|--------|
+| 1. Chapter presentation | books with a `.ppsx` deck | **Never run.** It also needs `python-pptx`, which the installer does not install. |
+| 2. Text layer | Hölzel books | **Partly tested:** text extraction worked; no full summary was made. |
+| 3. OCR | TRAUNER books | **Tested end to end** on Praxisblicke Betriebswirtschaft IV, pages 30–65. |
+| 4. Reading on screen | digi4school-native books (e.g. Best Shots) | **Not tested.** Only found that OCR is blocked there. |
+
+Routes 1, 2 and 4 are **experimental**: use them expecting that they may need fixing.
+
+**Measured speed (one run each, one book, one computer):** pages 51–65 (15 pages, with the book's
+figures) went from the first command to a saved Word file in **4.3 minutes**. An earlier version of
+the same job took 11.6 minutes. Expect variation; the other routes have no measured time yet.
+
+**Figures:** the book's tables and models are found by TRAUNER's colours and embedded as the book's own
+images. That worked for 10 of 11 figures on pages 51–65 (a beige sample form was missed). Other
+publishers' books use other colours, so the finder may find nothing there.
 
 ## Limitations & honesty
 
@@ -166,7 +184,12 @@ and handled by the same logic, and may need a one-time confirmation on first use
 - Figures/diagrams that are images come through only where the skill captures them; summaries
   of **image-only** books rely on OCR/reading and inherit those limits (e.g. column order in
   dense tables).
-- It summarizes **only** what's in the book — no outside facts added.
+- It summarizes **only** what's in the book — no outside facts added. A fact check on one 15-page
+  summary found the first version had left out about 20 small facts (reasons, examples, list items);
+  the skill now has rules and a warning against that, but **always skim the result against your book**.
+- Numbers come from OCR; a second text pass flags differences, but it can miss a number that both
+  passes read wrong. Numbers inside embedded images are always the book's own.
+- Only the first page of the Word layout was checked visually in the last run.
 
 ## Roadmap
 
