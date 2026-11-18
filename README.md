@@ -46,11 +46,10 @@ separate **standalone app**, which a Claude Code skill cannot be — see
 2. **Extract the fastest way** (see the speed ladder below) — a ready-made chapter
    presentation if one exists, otherwise the reader's text layer, otherwise OCR, otherwise
    on-screen reading.
-3. **Summarize** — a short, telegraphic **study summary** (bullets + comparison tables under the
-   book's own headings, key terms in bold, about 70–90 words per book page), in the **book's own
-   language**, using **only** what's in the book. It first asks — in your language — whether to include the
-   figures, models and diagrams from the pages (embedded as images) and how to export: clean **Word
-   document**, PDF, or chat.
+3. **Summarize** — a short, telegraphic **study summary** (bullets under the book's own headings, key
+   terms in bold, about 70 words per book page), in the **book's own language**, using **only** what's in
+   the book. It asks one question first — in your language — whether to include the book's figures, models
+   and tables (embedded as the book's own images, never retyped). Delivered as a clean **Word document**.
 
 ## Requirements
 

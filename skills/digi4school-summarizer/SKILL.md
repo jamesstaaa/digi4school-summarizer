@@ -72,32 +72,18 @@ When the user asks for a summary (a topic or a page range), do this:
 1. **Pre-flight FIRST, silently.** Before extracting anything, resolve the scope (§1a)
    and check the route (§1b): how many chapters it spans, whether presentations cover
    them, which route applies. Do this quickly — **do NOT narrate the mechanics.**
-2. **Then, before you start, ask the user (plain terms) and WAIT for the answer.** Ask in ONE
-   message, **in the user's own language** — the language they wrote their request in (if
-   unclear, their system/app language). Never ask a German speaker in English, etc. Ask:
-   - what you're about to do + the scope + a rough **time estimate** from the route you found
-     (give both: with figures / without figures — see the route-times table below);
-   - **how should it be exported — Word (.docx), PDF, or straight into the chat?** (default Word);
-   - **should the figures, diagrams, models and tables from the pages be included? (yes/no).**
-   Skip any item the user already answered in their request (e.g. "as a Word doc with figures").
-   Example (German): *"Bereit, die Seiten 50–100 zusammenzufassen (~5 Min. mit Abbildungen,
-   ~3 Min. ohne). Als Word, PDF oder hier im Chat? Sollen Abbildungen, Grafiken und Modelle
-   aus den Seiten eingefügt werden? (ja/nein)"* — Example (English): *"Ready to summarise pages
-   50–100 (~5 min with figures, ~3 without). Export as Word, PDF, or here in the chat? Include the
-   figures, diagrams and models from the pages? (yes/no)"*
-   Keep it short: **what + how long + those two choices.** The user does NOT care *how*
-   (presentations vs OCR vs pacing) — never explain the extraction method, routes, or safety.
-   (The interaction language is the user's; the **summary itself** stays in the **book's**
-   language unless they ask otherwise — see Hard rules.)
-3. **Then do it and deliver in the chosen format.**
-
-**Export rule (IMPORTANT — the user wants this):** by default always produce a **file**
-(Word or PDF), and **NEVER write the full summary into the chat unless the user explicitly
-chose "chat."** Ask the export format up front (step 2) — do NOT dump the whole summary into
-the message and only then offer a file. Mapping: **Word** → build with `python-docx`; **PDF**
-→ build the Word doc then convert to PDF (e.g. `export_pdf`, LibreOffice `soffice --headless
---convert-to pdf`, or render Markdown→PDF); **chat** → write it in the message as normal.
-Deliver the file with SendUserFile and save it in the project folder.
+2. **Then, before you start, ask ONE question and WAIT.** In the **user's own language** (the language
+   they wrote in; system language if unclear — never ask a German speaker in English). Say what you are
+   about to do + the scope + a rough **time estimate** (with / without figures), and ask: **should the
+   figures, models and tables from the pages be included? (yes/no)**. Skip it if they already said so.
+   Example (German): *"Bereit, die Seiten 51–65 zusammenzufassen (~6 Min. mit Abbildungen, ~3 Min. ohne).
+   Sollen Abbildungen, Modelle und Tabellen aus den Seiten eingefügt werden? (ja/nein)"* — English:
+   *"Ready to summarise pages 51–65 (~6 min with figures, ~3 without). Include the figures, models and
+   tables from the pages? (yes/no)"*. The user does NOT care *how* — never explain routes, OCR or pacing.
+   (The summary itself stays in the **book's** language — see Hard rules.)
+3. **Then do it.** The output is always a **Word (.docx) file** (no PDF step, no Word export/layout check
+   — the builder's layout is already tested). Never dump the summary into the chat. Save the file in the
+   working folder and send it with SendUserFile.
 
 ## Summary style (MANDATORY — this is what "summary" means here)
 The output is a **study summary (Lernzettel style)** — NOT a paraphrase, retelling or
@@ -118,11 +104,13 @@ transcript of the book. A document that follows the book sentence by sentence is
    as bullets or a Word table. Only when the book presents a comparison as running text (no
    table/graphic) may you build a small table yourself, using only the book's wording.
 7. **Examples in one short line** ("Bsp.: …").
-8. **Length:** about **70–90 words per BOOK page** in the document; the builder hard-fails above
-   110 words/page (exit code 3) — then merge and shorten, but **never drop facts to get under it.**
-9. **Completeness check before building:** walk the source page by page — every heading, bold
-   term, definition, list and figure must appear (shortened). Only exercises and decoration
-   may be missing.
+8. **One tight pass — write it short the FIRST time:** about **70 words per BOOK page** (≈ 1,000 words
+   for 15 pages). Do NOT write a long draft and shorten it afterwards (that is a second full write,
+   1–2 min wasted). While writing: never restate what an embedded image already shows; examples in one
+   line; merge lead-in bullets; no asides (head counts, anecdote details) unless exam-relevant. The
+   builder hard-fails above 110 words/page (exit code 3) — then cut filler, **never facts**.
+9. **Completeness:** go through the OCR text heading by heading — every heading, bold term, definition,
+   list and number appears (shortened). Only exercises, decoration and what an image shows may be missing.
 
 Example — WRONG (book-style prose): *"Neue Märkte: Ehemalige Sowjetrepubliken, Indien, China und
 viele Länder Asiens, Lateinamerikas und Afrikas haben sich dem Weltmarkt geöffnet."* /
@@ -131,37 +119,33 @@ RIGHT (summary style): `**Neue Märkte:** Ex-UdSSR, Indien, China, Asien/Lateina
 zum Weltmarkt` / `**Auswirkungen:** Ökonomie, Ökologie, Gesellschaft`.
 
 ## Figures & models (when the user said yes)
-**The user's rule: the information must come ONLY from the book, and anything the book shows as
-a table, model, scheme, diagram or chart goes into the document as the BOOK'S OWN IMAGE — never
-retyped, redrawn or rebuilt by you.** The book's image shows it better and can't contain my
-transcription errors. This covers: tables (incl. Vorteile/Nachteile boxes, Zollarten, Handels-
-barrieren…), models, process flows, schemes, charts/statistics, maps and info-boxes that are
-graphics. Skip: decorative stock photos, logos, icons, QR codes, portraits, and anything that
-belongs to an exercise (Aufgaben).
-- **Check every page against its IMAGE, not only the OCR text.** OCR misreads numbers (e.g. 9,58
-  read as 9,538) and merges columns. For every page in scope, look at a full-page render (below)
-  and compare it with your summary: every heading, bold term, number, list and box. Numbers,
-  percentages and years MUST be read from the image. Fix the summary where they differ.
-- **Page renderer (TRAUNER / outlined-SVG viewers, works with the CSP):** inject `D4S.region` (code
-  below, after the OCR module). `await D4S.region(page, x, y, w, h, {outW:1600})` draws that region
-  of the page — photos included — at high resolution as a full-frame overlay; then
-  `computer zoom` with `save_to_disk:true` on the overlay returns a sharp image file. Page
-  coordinates are in book units (a page is **909 × 1286**). Use `region(page,0,0,909,1286,{outW:1400})`
-  + `zoom [137,0,719,823]` for a whole-page view; coordinates you read off that whole-page image
-  (924 × 1307 px) are ≈ page units (× 0.98). Cut each table/model with a small margin so no edge
-  or title is clipped; capture the overlay with `zoom [0,0,viewportW,viewportH]`.
-- **Trim and look:** trim the white margins (Pillow bbox of non-white pixels + ~8 px padding),
-  make a contact sheet of all crops and LOOK at it — redo any clipped or blurry crop.
-- Copy each crop into the working folder with a meaningful name (`f05_p35_exportlaender.png`) and
-  add it where it belongs: `figure` (one image, `width_cm`, optional `max_h_cm`) or `figures` (several
-  small ones side by side); caption = `Titel (S. N)`. Put the image right after the bullet it
-  belongs to. Wide tables: `width_cm` ≈ 15–17. Narrow ones: ≈ 9–12.
-- **Presentation route:** the deck gives TEXT only; slide shapes can't be exported as images, so
-  figures/tables still come from the book pages with the renderer above.
-- **Other viewers** (no renderer): the same via the viewer — fit the page, jump to the page, `zoom`
-  on the figure region with `save_to_disk:true`.
-- Cost: about one page-view per page in scope (~3 s) plus ~2 s per crop ≈ **+3–5 min per 50 pages**
-  (the "with figures" column below). If the user answers "no", skip all of this and use "no figures".
+**The user's rule: information ONLY from the book, and anything the book shows as a table, model, scheme,
+diagram or chart goes into the document as the BOOK'S OWN IMAGE — never retyped, redrawn or rebuilt.**
+Covers: tables (incl. Vorteile/Nachteile boxes), models, process flows, schemes, charts. Skip: stock photos,
+logos, icons, QR codes, portraits, and anything that belongs to an exercise (Aufgaben).
+
+**Lean method — do NOT screenshot every page** (TRAUNER / outlined-SVG viewers; code in §3B):
+1. **Find them from the page data, not by looking:** `await D4S.figures(page)` returns each table/model box
+   in book units (a page is 909 × 1286): `table` (the book's red header bars), `table-noheader`, `graphic`
+   (coloured chart). Run it for all pages in scope in ONE call. Exercise boxes (green) and text boxes
+   (beige "Aha"/"Beispiel") are not returned — correct. Tested on pp. 51–65 of a TRAUNER book: found 10 of
+   11 figures with exact boxes, no hits on exercise pages; it misses beige-on-white sample forms (optional).
+2. **Crop only those boxes:** per box `await D4S.region(page, x-6, y-6, w+12, h+12, {outW:1600})`, then
+   `computer zoom` with `save_to_disk:true` on `[0,0,viewportW,viewportH]` (batch 5–6 per browser_batch
+   call). Look at each crop; redo a clipped one. Trim the white margins with Pillow (bbox + ~8 px).
+   (Browser → local file without screenshots is NOT possible: Chrome blocks/hangs the local upload.)
+3. Embed: `figure` (one) or `figures` (several small, side by side); caption = `Titel (S. N)`; place it
+   right after the bullet it belongs to. Wide tables `width_cm` ≈ 15; narrow ones ≈ 9–12.
+4. **Check numbers without viewing every page** (OCR misreads digits, e.g. 9,58 → 9,538): after pass 1
+   (`D4S.ocrFast(a,b)`) start pass 2 in the background while you crop and write:
+   `D4S.p2 = {}; D4S.ocrFast(a,b,{scale:3.5, into:D4S.p2})`. Before building run
+   `D4S.numDiff(D4S.pages, D4S.p2)` — it lists numbers that differ between the passes (tested: caught
+   9,538 vs 9,58 and 194.679.484 vs …434; also flags stray single digits). View **only those pages**
+   (`D4S.region(p,0,0,909,1286,{outW:1400})` + zoom) and fix the summary. Heuristic, not proof: if both
+   passes misread the same way it shows nothing. Numbers inside embedded images are always right.
+- **Presentation route:** the deck gives TEXT only; tables/figures still come from the pages as above.
+- **Other viewers** (no renderer): jump to the page, `zoom` on the figure with `save_to_disk:true`.
+- If the user answers "no", skip all of this.
 
 ## Always take the fastest route to the content (speed ladder)
 Minimising the user's time is the whole point. For the requested topic/pages, use the
@@ -185,18 +169,13 @@ Tell the user upfront which route applies and the rough time, so expectations ar
 |-------|------------------------|------------|--------------|
 | 1. Presentation (`.ppsx`) | ~6–9 min | ~2 min | ~none for the deck; figure pass = normal viewing |
 | 2. Text layer (Hölzel) | ~6–9 min | ~2–3 min | low (acts like a reader) |
-| 3. OCR (`ocrFast`, TRAUNER) | ~7–10 min | ~3 min | low–moderate |
+| 3. OCR (`ocrFast`, TRAUNER) | ~6 min (est.) | ~3 min | low–moderate |
 | 4. Visual reading (native/Best Shots) | ~5–8 min | ~3–5 min | low (uses the real reader) |
 
-(Measured on a real run, 21 pages of a TRAUNER book: text extraction ~1.5 min; checking each page
-image and cropping 17 book tables/models/charts took most of the rest. With figures, the checking
-pass over every page is what takes time — it is what makes the numbers and tables correct.)
-
-(On route 4 the text is read during the same page visit that finds the figures, so figures add
-little there.) Walls that can't be beaten while staying safe: the **~1 page/s** safe fetch/visit
-rate (faster → ban risk climbs), the **figure pass** (~2–3 s/page, one visit per page in scope),
-and the **~1–2 min** the model needs to write the summary (a shorter, telegraphic summary
-writes a bit faster). The real speed lever is **route selection** (reach for a presentation).
+(Only the OCR route was timed: 15 pages of a TRAUNER book with figures took **11.6 min** with the old flow —
+~4 min of that was a hanging Word export and extra checks, ~1.3 min rewriting the summary a second
+time. The lean flow here should take **~6 min** — an estimate, not yet timed. Walls: ~1 page/s safe fetch
+rate, and ~2 min to write ~1,000 words. The other rows are rough estimates.)
 
 ## Procedure
 
@@ -353,7 +332,7 @@ OCRs it with tesseract.js. Steps (via the Chrome `javascript_tool`):
     let gate = Promise.resolve();
     const paced = (d) => { const turn = gate.then(() => new Promise(r => setTimeout(r, minGap + Math.random() * jitter))); gate = turn; return turn.then(() => S.renderCanvas(d + offset, scale)); };
     const q = []; for (let d = start; d <= end; d++) q.push(d); let i = 0;
-    const run = async (w) => { while (i < q.length) { const d = q[i++]; const cv = await paced(d); const { data } = await w.recognize(cv); S.pages[d] = (data.text || '').replace(/[ \t]+\n/g, '\n').trim(); } };
+    const run = async (w) => { while (i < q.length) { const d = q[i++]; const cv = await paced(d); const { data } = await w.recognize(cv); (opts.into || S.pages)[d] = (data.text || '').replace(/[ \t]+\n/g, '\n').trim(); } };
     await Promise.all(S._pool.slice(0, K).map(run));
     return { done: q.length };
   };
@@ -404,6 +383,79 @@ OCRs it with tesseract.js. Steps (via the Chrome `javascript_tool`):
     return { page, region: [x, y, w, h], vw: innerWidth, vh: innerHeight };
   };
   S.regionOff = function () { const o = document.getElementById('d4s-reg'); if (o) o.remove(); };
+  // Find the book's tables/models/charts from the page data (no screenshot). TRAUNER style: red header bars (173,34,40).
+  S.figures = async function (page, offset = 2) {
+    const txt = await (await fetch(`${S._base}/${page + offset}.svg`, { credentials: 'include' })).text();
+    const photos = [...txt.matchAll(/<image\b[^>]*>/g)].map((m) => { const a = m[0], g = (k) => +(a.match(new RegExp('\\b' + k + '="([^"]*)"')) || [])[1]; return { x: g('x'), y: g('y'), w: g('width'), h: g('height') }; }).filter((b) => b.w > 40 && b.h > 40);
+    const clean = txt.replace(/<image\b[^>]*\/>/g, '').replace(/<image\b[\s\S]*?<\/image>/g, '');
+    const host = document.createElement('div'); host.style.cssText = 'position:absolute;left:-99999px;top:0;visibility:hidden'; host.innerHTML = clean; document.body.appendChild(host);
+    const els = [];
+    host.querySelector('svg').querySelectorAll('path,rect').forEach((el) => {
+      if (el.closest('defs')) return;
+      const cs = getComputedStyle(el); let b; try { b = el.getBBox(); } catch (e) { return; }
+      const m = cs.fill.match(/\d+/g);
+      els.push({ x: b.x, y: b.y, w: b.width, h: b.height, c: m ? m.map(Number) : null, stroke: cs.stroke !== 'none' && cs.strokeWidth !== '0px' });
+    });
+    host.remove();
+    const near = (c, r, g, b, t = 8) => c && Math.abs(c[0] - r) < t && Math.abs(c[1] - g) < t && Math.abs(c[2] - b) < t;
+    const isWhite = (c) => !c || (c[0] > 250 && c[1] > 250 && c[2] > 250) || (c[0] < 12 && c[1] < 12 && c[2] < 12);
+    const isGray = (c) => c && Math.abs(c[0] - c[1]) < 8 && Math.abs(c[1] - c[2]) < 8;
+    const isRed = (e) => near(e.c, 173, 34, 40, 8) && e.w > 80 && e.h > 15 && e.h < 60;
+    const isBeige = (e) => near(e.c, 242, 238, 227, 3);
+    const isPink = (e) => e.c && e.c[0] >= 215 && e.c[1] >= 150 && e.c[1] <= 225 && e.c[2] >= 140 && e.c[2] <= 215 && e.c[0] - e.c[1] > 12 && !isBeige(e);
+    const isBody = (e) => (isPink(e) || isBeige(e)) && e.w > 40 && e.w < 800;
+    const found = [];
+    const inside = (e) => found.some((f) => e.x >= f.x - 2 && e.y >= f.y - 2 && e.x + e.w <= f.x + f.w + 2 && e.y + e.h <= f.y + f.h + 2);
+    const grow = (x0, y0, x1, y1) => {
+      const cand = els.filter(isBody).concat(photos);
+      let g = true;
+      while (g) {
+        g = false;
+        for (const e of cand) { const ox = Math.min(x1, e.x + e.w) - Math.max(x0, e.x); if (ox > 0.5 * Math.min(e.w, x1 - x0) && e.y <= y1 + 6 && e.y + e.h > y1 + 0.5) { y1 = e.y + e.h; g = true; } }
+        for (const e of els) {
+          if (isWhite(e.c) || e.w > 800 || e.h > (y1 - y0) + 5 || e.w < 20) continue;
+          if (Math.min(y1, e.y + e.h) - Math.max(y0, e.y) < 0.6 * e.h) continue;
+          if (Math.abs(e.x - x1) <= 3 && e.x + e.w > x1) { x1 = e.x + e.w; g = true; } else if (Math.abs(e.x + e.w - x0) <= 3 && e.x < x0) { x0 = e.x; g = true; }
+        }
+      }
+      return [x0, y0, x1, y1];
+    };
+    const finish = (x0, y0, x1, y1, kind) => {
+      let frame = null;
+      for (const e of els) if (e.stroke && !e.c && e.x <= x0 + 1 && e.y <= y0 + 1 && e.x + e.w >= x1 - 1 && e.y + e.h >= y1 - 1 && e.w < x1 - x0 + 60 && e.h < y1 - y0 + 80) { if (!frame || e.w * e.h < frame.w * frame.h) frame = e; }
+      const b = frame || { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+      found.push({ x: b.x, y: b.y, w: b.w, h: b.h, kind });
+    };
+    const reds = els.filter(isRed).sort((a, b) => a.y - b.y || a.x - b.x), used = new Set();
+    for (const r of reds) {
+      if (used.has(r)) continue;
+      const row = reds.filter((q) => Math.abs(q.y - r.y) < 4 && !used.has(q)); row.forEach((q) => used.add(q));
+      const [x0, y0, x1, y1] = grow(Math.min(...row.map((q) => q.x)), r.y, Math.max(...row.map((q) => q.x + q.w)), Math.max(...row.map((q) => q.y + q.h)));
+      finish(x0, y0, x1, y1, 'table');
+    }
+    const pinks = els.filter((e) => isPink(e) && e.w > 100 && e.h > 30 && !inside(e)).sort((a, b) => a.y - b.y), usedP = new Set();
+    for (const p of pinks) {
+      if (usedP.has(p)) continue; usedP.add(p);
+      const [x0, y0, x1, y1] = grow(p.x, p.y, p.x + p.w, p.y + p.h);
+      pinks.forEach((q) => { if (q.x >= x0 - 2 && q.y >= y0 - 2 && q.x + q.w <= x1 + 2 && q.y + q.h <= y1 + 2) usedP.add(q); });
+      if ((x1 - x0) * (y1 - y0) > 20000) finish(x0, y0, x1, y1, 'table-noheader');
+    }
+    const others = els.filter((e) => !isWhite(e.c) && !isGray(e.c) && !isBeige(e) && !isPink(e) && !isRed(e) && e.w >= 80 && e.w <= 300 && e.h >= 80 && !inside(e) && !(e.c[1] > 215 && e.c[0] > 200 && e.c[2] > 170 && e.w > 250));
+    if (others.length) finish(Math.min(...others.map((e) => e.x)), Math.min(...others.map((e) => e.y)), Math.max(...others.map((e) => e.x + e.w)), Math.max(...others.map((e) => e.y + e.h)), 'graphic');
+    return found.map((f) => ({ kind: f.kind, box: [f.x, f.y, f.w, f.h].map(Math.round) }));
+  };
+  // Numbers that differ between two OCR passes (a, b = {page: text}) — those pages need a look.
+  S.numDiff = function (a, b) {
+    const num = (t) => (t.match(/\d[\d.,]*\d|\d/g) || []).map((s) => s.replace(/[.,]$/, ''));
+    const bag = (l) => l.reduce((m, x) => ((m[x] = (m[x] || 0) + 1), m), {});
+    const out = {};
+    for (const p of Object.keys(a)) {
+      const x = bag(num(a[p])), y = bag(num(b[p] || '')), pa = [], pb = [];
+      new Set([...Object.keys(x), ...Object.keys(y)]).forEach((k) => { if ((x[k] || 0) > (y[k] || 0)) pa.push(k); if ((y[k] || 0) > (x[k] || 0)) pb.push(k); });
+      if (pa.length || pb.length) out[p] = { pass1: pa, pass2: pb };
+    }
+    return out;
+  };
 })();
 ```
 2. Confirm the offset once (navigate `?page=42`, read `#txtPage`), then OCR in
@@ -445,7 +497,7 @@ If `svg text` > 0 (some publishers), read `svg text` content in document order a
 advance pages with the next-page control. Confirm the first page matches the
 screenshot before looping. (Verify on first use.)
 
-### Build the document (Word/PDF) — ALWAYS with the bundled builder
+### Build the Word document — ALWAYS with the bundled builder
 Do **not** improvise `python-docx` code — use `build_summary_docx.py`, which guarantees a clean,
 consistent layout (title block, numbered headings with page refs, tight bullets, tables with a
 header row that never split across pages, figures with captions, footer with source + page
@@ -466,14 +518,11 @@ number) and enforces the length limit.
    Inline `**bold**` only. Put each figure block where the figure belongs in the text.
 4. Run `python3 build_summary_docx.py spec.json "<name>.docx"`. **Exit code 3 = too long** →
    tighten (merge bullets, shorten, drop filler — never drop facts) and rebuild until it passes.
-5. **PDF** (if chosen): `soffice --headless --convert-to pdf --outdir <dir> "<name>.docx"` when
-   LibreOffice exists; otherwise deliver the `.docx` and tell the user to use *File ▸ Save as PDF*.
-6. Save the file in the project/working folder and send it with SendUserFile. File name:
-   `<Buch>_<Thema-oder-Seiten>.docx`.
+5. Save the file in the working folder and send it with SendUserFile. File name:
+   `<Buch>_<Thema-oder-Seiten>.docx`. Done — do not render or re-check it in Word.
 
 ### 4. Deliver what the user asked for
-- **Honour the export format chosen in step 2** (Word / PDF / chat). Default is a **Word
-  file** — do NOT write the whole summary into chat unless the user explicitly picked "chat."
+- The result is a **Word file**; do NOT write the whole summary into chat.
 - Keep the page the text came from so you can cite "p. N" when useful.
 - **Summary / key points**: follow **"Summary style"** above exactly — telegraphic bullets and
   tables under the book's own headings, in the book's own language, only content from the
