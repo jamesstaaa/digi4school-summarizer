@@ -186,7 +186,8 @@ publishers' books use other colours, so the finder may find nothing there.
   dense tables).
 - It summarizes **only** what's in the book — no outside facts added. A fact check on one 15-page
   summary found the first version had left out about 20 small facts (reasons, examples, list items);
-  the skill now has rules and a warning against that, but **always skim the result against your book**.
+  the skill now has rules, a warning, and an automatic coverage check (it lists numbers and names from the page text
+  that the summary lacks; on that example it flagged 8 of 10 known lost facts, with many harmless extras), but **always skim the result against your book**.
 - Numbers come from OCR; a second text pass flags differences, but it can miss a number that both
   passes read wrong. Numbers inside embedded images are always the book's own.
 - Only the first page of the Word layout was checked visually in the last run.

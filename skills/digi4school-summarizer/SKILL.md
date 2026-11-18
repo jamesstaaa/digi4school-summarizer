@@ -121,6 +121,14 @@ transcript of the book. A document that follows the book sentence by sentence is
    page tick off every heading, bold term, definition, number, named example (with its point), list item
    and measure (with its purpose) in your summary and add what is missing. Only exercise questions,
    decoration and what an embedded image shows may be absent.
+   **Then run the automatic coverage check** (OCR route, same tab, no extra page requests):
+   `window.__cov = await D4S.coverage(summaryText)` where `summaryText` is the whole summary as one string
+   (all bullets/headings, in a JS template string). It lists numbers and capitalised names/nouns from the page
+   text that your summary does not contain. Read `__cov.numbers` and `__cov.terms.slice(0,60).join(' ')` (then
+   the next 60 if the first were mostly real). It is a cue list, not a verdict: about half of the terms are
+   words from exercise/case boxes you left out on purpose, or generic nouns — skip those, and add every real
+   fact (a name with its point, a number with its meaning). Tested on the 15-page example: the first draft
+   showed 8 of 10 known lost facts, the restored version none of them.
 
 Example — WRONG (book-style prose): *"Neue Märkte: Ehemalige Sowjetrepubliken, Indien, China und
 viele Länder Asiens, Lateinamerikas und Afrikas haben sich dem Weltmarkt geöffnet."* /
@@ -302,7 +310,7 @@ OCRs it with tesseract.js. Steps (via the Chrome `javascript_tool`):
 ```js
 (function () {
   const S = (window.D4S = window.D4S || {});
-  S.pages = S.pages || {}; S._pool = S._pool || null; S._base = S._base || null; S._lang = S._lang || 'deu';
+  S.pages = S.pages || {}; S.lines = S.lines || {}; S._pool = S._pool || null; S._base = S._base || null; S._lang = S._lang || 'deu';
   function detectBase() {
     const obj = document.querySelector('object[type="image/svg+xml"]');
     if (obj && obj.data && /\/\d+\.svg/.test(obj.data)) return obj.data.replace(/\/[^/]+\.svg.*$/, '');
@@ -342,7 +350,10 @@ OCRs it with tesseract.js. Steps (via the Chrome `javascript_tool`):
     let gate = Promise.resolve();
     const paced = (d) => { const turn = gate.then(() => new Promise(r => setTimeout(r, minGap + Math.random() * jitter))); gate = turn; return turn.then(() => S.renderCanvas(d + offset, scale)); };
     const q = []; for (let d = start; d <= end; d++) q.push(d); let i = 0;
-    const run = async (w) => { while (i < q.length) { const d = q[i++]; const cv = await paced(d); const { data } = await w.recognize(cv); (opts.into || S.pages)[d] = (data.text || '').replace(/[ \t]+\n/g, '\n').trim(); } };
+    const run = async (w) => { while (i < q.length) { const d = q[i++]; const cv = await paced(d); const { data } = await w.recognize(cv); (opts.into || S.pages)[d] = (data.text || '').replace(/[ \t]+\n/g, '\n').trim();
+      if (!opts.into) S.lines[d] = (data.lines || (data.blocks || []).flatMap((b) => (b.paragraphs || []).flatMap((p) => p.lines || [])))
+        .map((l) => ({ t: (l.text || '').trim(), b: [l.bbox.x0, l.bbox.y0, l.bbox.x1, l.bbox.y1].map((v) => v / scale),
+          w: (l.words || []).map((x) => ({ t: x.text, b: [x.bbox.x0, x.bbox.y0, x.bbox.x1, x.bbox.y1].map((v) => v / scale) })) })); } };
     await Promise.all(S._pool.slice(0, K).map(run));
     return { done: q.length };
   };
@@ -453,6 +464,51 @@ OCRs it with tesseract.js. Steps (via the Chrome `javascript_tool`):
     const others = els.filter((e) => !isWhite(e.c) && !isGray(e.c) && !isBeige(e) && !isPink(e) && !isRed(e) && e.w >= 80 && e.w <= 300 && e.h >= 80 && !inside(e) && !(e.c[1] > 215 && e.c[0] > 200 && e.c[2] > 170 && e.w > 250));
     if (others.length) finish(Math.min(...others.map((e) => e.x)), Math.min(...others.map((e) => e.y)), Math.max(...others.map((e) => e.x + e.w)), Math.max(...others.map((e) => e.y + e.h)), 'graphic');
     return found.map((f) => ({ kind: f.kind, box: [f.x, f.y, f.w, f.h].map(Math.round) }));
+  };
+  // Coverage check: numbers (>= 2 digits) and capitalised nouns/names in the page text that are missing from the
+  // summary. Skips text inside embedded figures (the image carries it), reader-addressing lines ("Sie ...",
+  // exercise questions) and words that occur on 4+ pages. Two-column lines are split at wide gaps.
+  // Heuristic: 5-letter stems, so it can hide a missing word whose stem the summary uses elsewhere, and it
+  // does not see lower-case facts. It is a cue list, not a verdict: roughly half of the terms it lists are
+  // exercise/case-box words that were left out on purpose. Decide each one against the book page.
+  S.coverage = async function (summary, opts = {}) {
+    const nz = (s) => s.toLowerCase().replace(/ß/g, 'ss');
+    const sumN = nz(summary), pages = Object.keys(S.lines).map(Number).sort((a, b) => a - b);
+    const sumNums = new Set((summary.match(/\d[\d.,]*\d|\d/g) || []).map((x) => x.replace(/\D/g, '')));
+    const you = /\b(sie|ihre[nrms]?|ihnen|ihr)\b/i, ignore = new Set((opts.ignore || []).map((w) => nz(w).slice(0, 5)));
+    const gap = opts.gap || 22, numbers = [], terms = {};
+    for (const pg of pages) {
+      let boxes = []; try { boxes = (await S.figures(pg)).map((f) => f.box); } catch (e) { /* no figure data: check all lines */ }
+      for (const ln of S.lines[pg]) {
+        const segs = []; let cur = [];
+        for (const w of (ln.w && ln.w.length ? ln.w : [{ t: ln.t, b: ln.b }])) {
+          if (cur.length && w.b[0] - cur[cur.length - 1].b[2] > gap) { segs.push(cur); cur = []; }
+          cur.push(w);
+        }
+        if (cur.length) segs.push(cur);
+        for (const sg of segs) {
+          const t = sg.map((w) => w.t).join(' ').trim(); if (!t || /^\d{1,3}$/.test(t) || you.test(t)) continue;
+          const cx = (sg[0].b[0] + sg[sg.length - 1].b[2]) / 2, cy = (sg[0].b[1] + sg[0].b[3]) / 2;
+          if (boxes.some(([x, y, w, h]) => cx >= x && cx <= x + w && cy >= y && cy <= y + h)) continue;
+          const head = /^\d+(\.\d+)*\.?\s+[A-ZÄÖÜ]/.test(t);
+          for (const m of t.matchAll(/\d{1,3}(?:[.,]\d{3})+|\d+[.,]\d+|\d{2,}/g)) {
+            if (head && m.index === 0) continue;
+            if (sumNums.has(m[0].replace(/\D/g, ''))) continue;
+            numbers.push({ page: pg, n: m[0], ctx: t.slice(Math.max(0, m.index - 20), m.index + 25) });
+          }
+          const toks = t.split(/\s+/);
+          toks.forEach((w, i) => {
+            const m = w.match(/^[„"(]?([A-ZÄÖÜ][a-zäöüß]{4,})(-?)/); if (!m || i === 0 || /[.:!?]$/.test(toks[i - 1])) return;
+            if (m[2]) return; // hyphenated line break: the word continues on the next line
+            const stem = nz(m[1]).slice(0, 5); if (ignore.has(stem) || sumN.includes(stem)) return;
+            const o = (terms[stem] = terms[stem] || { word: m[1], pages: new Set(), n: 0 }); o.n++; o.pages.add(pg);
+          });
+        }
+      }
+    }
+    const list = Object.values(terms).filter((o) => o.pages.size < (opts.generic || 4)).sort((a, b) => b.n - a.n)
+      .slice(0, opts.max || 300).map((o) => `${o.word}(S.${[...o.pages].join(',')})`);
+    return { numbers: numbers.map((x) => `${x.n} (S.${x.page}) …${x.ctx}`), terms: list };
   };
   // Numbers that differ between two OCR passes (a, b = {page: text}) — those pages need a look.
   S.numDiff = function (a, b) {
