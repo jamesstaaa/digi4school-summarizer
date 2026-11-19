@@ -77,17 +77,23 @@ When the user asks for a summary (a topic or a page range), do this:
    `select:AskUserQuestion` if deferred); otherwise print the same questions as numbered choices in chat.
    Skip any question the user already answered or that does not apply:
    - **Source — only when a presentation covers a WHOLE chapter/topic** (never for exact page ranges):
-     *Presentation (fast, condensed; headings it skips are taken from the pages)* / *Book pages only (full detail)*.
+     *Book pages only (Recommended: full detail, tested)* / *Chapter presentation as the outline + details from
+     the pages*. **Do not promise speed for the presentation:** in the one real test it was a thin outline
+     (35 slides, mostly headings and images), the page text still had to be read, and it saved almost nothing.
+     **The option text must name the file and the download:** e.g. *"… from `02 Internationale
+     Geschaeftstaetigkeit.ppsx` (downloaded from your digibox into a temporary folder; the site does not show
+     its size beforehand — the one deck measured was 10 MB)"*. Choosing it IS the permission to download that
+     one file; never download without that choice.
    - **Figures, models and tables from the pages included?** *Yes (the book's own images)* / *No (text only)*.
    - **Anything else that changes the result and is not obvious**, e.g. scope unclear between two chapters.
    Never ask how it works (routes, OCR, pacing) — the user does not care. Never ask about length or format
    (length is offered AFTER the result; the output is always Word).
-   Example (German): *Quelle: Präsentation (schnell, verdichtet) / Nur Buchseiten (volle Details) — Abbildungen,
-   Modelle, Tabellen einfügen: Ja / Nein.*
+   Example (German): *Quelle: Nur Buchseiten (volle Details) / Kapitel-Präsentation „02 …ppsx“ als Gliederung +
+   Details aus den Seiten — Abbildungen, Modelle, Tabellen einfügen: Ja / Nein.*
 3. **After the answers, give the estimate for the finished Word file, then start immediately.** One line:
    *"Fertig in ca. 5 Min."* / *"Ready in about 5 min."* Estimate: about **1 min + 0.2 min per page without
    figures, + 0.1 min per page and ≈ 0.2 min per figure with figures** (measured once: 15 pages with figures
-   = 4.3 min; the rest is extrapolated). A deck-only source is faster. Round up, say "ca." — it is an estimate.
+   = 4.3 min; the rest is extrapolated). Round up, say "ca." — it is an estimate (a presentation does not make it faster).
 4. **Do it.** The output is always a **Word (.docx) file** (no PDF step, no Word export or layout rendering). Never dump the
    summary into chat. Save the file in the working folder and send it with SendUserFile.
 5. **After delivering, ask whether to shorten it** (same multiple-choice style, in the user's language):
@@ -138,7 +144,8 @@ transcript of the book. A document that follows the book sentence by sentence is
    text that your summary does not contain. Read `__cov.numbers` and `__cov.terms.slice(0,60).join(' ')` (then
    the next 60 if the first were mostly real). It is a cue list, not a verdict: about half of the terms are
    words from exercise/case boxes you left out on purpose, or generic nouns — skip those, and add every real
-   fact (a name with its point, a number with its meaning). Tested on the 15-page example: the first draft
+   fact (a name with its point, a number with its meaning). Typical false alarms: axis numbers and text of charts
+   you embedded as images, addresses/forms in exercise boxes, and exercise questions. Tested on the 15-page example: the first draft
    showed 8 of 10 known lost facts, the restored version none of them.
 
 Example — WRONG (book-style prose): *"Neue Märkte: Ehemalige Sowjetrepubliken, Indien, China und
@@ -148,6 +155,12 @@ RIGHT (summary style): `**Neue Märkte:** Ex-UdSSR, Indien, China, Asien/Lateina
 zum Weltmarkt` / `**Auswirkungen:** Ökonomie, Ökologie, Gesellschaft`.
 
 ## Figures & models (when the user said yes)
+> **Known gap:** the finder keys on tables, boxes and photo/graphic clusters. A plain bar/line chart with only red
+> bars (no table around it) is NOT found (one miss in the 36-page test). After running it, look at the OCR text of
+> each page for chart signs (axis numbers like "4.000 3.500 …", "Werte in …", "Rang", a title ending in a year) on
+> pages where the finder returned nothing, and crop those by hand: `D4S.region(page, x, y, w, h)` with the chart's
+> frame (the title starts ~40 units from the left; make the box wide enough to include the last bar/label), view the
+> crop, redo it if a side is cut off.
 **The user's rule: information ONLY from the book, and anything the book shows as a table, model, scheme,
 diagram or chart goes into the document as the BOOK'S OWN IMAGE — never retyped, redrawn or rebuilt.**
 Covers: tables (incl. Vorteile/Nachteile boxes), models, process flows, schemes, charts. Skip: stock photos,
@@ -170,8 +183,13 @@ logos, icons, QR codes, portraits, and anything that belongs to an exercise (Auf
    `D4S.p2 = {}; D4S.ocrFast(a,b,{scale:3.5, into:D4S.p2})`. Before building run
    `D4S.numDiff(D4S.pages, D4S.p2)` — it lists numbers that differ between the passes (tested: caught
    9,538 vs 9,58 and 194.679.484 vs …434; also flags stray single digits). View **only those pages**
-   (`D4S.region(p,0,0,909,1286,{outW:1400})` + zoom) and fix the summary. Heuristic, not proof: if both
+   (`D4S.region(p,0,0,909,1286,{outW:1400})` + zoom, or only the line: `D4S.region(p,x,y,w,h)`) and fix the summary.
+   **Which pass is right is not fixed** (once pass 1 read 9,538 where the book says 9,58, another time pass 2 was
+   wrong): the page image decides. Heuristic, not proof: if both
    passes misread the same way it shows nothing. Numbers inside embedded images are always right.
+- **Browser waits:** a single browser JavaScript call that runs longer than ~45 s fails with a timeout (the page keeps
+  working). Never wait more than ~25–30 s in one call; start long jobs (OCR, figure scan) in the background on
+  `window` and poll with short calls.
 - **Presentation route:** the deck gives TEXT only; tables/figures still come from the pages as above.
 - **Other viewers** (no renderer): jump to the page, `zoom` on the figure with `save_to_disk:true`.
 - If the user answers "no", skip all of this.
@@ -242,14 +260,17 @@ Before extracting pages, see whether the chapter already has a publisher present
 - Under **Schüler → PräsentationsBox** are the `.ppsx` presentations (the topic
   summaries), e.g. `02 Internationale Geschaeftstaetigkeit.ppsx`; **WorkBox** holds
   PDFs. Match the title to the requested chapter/topic.
-- If a matching presentation exists: offer it in the up-front questions; if the user picks it, name it, then **download** it
+- If a matching presentation exists: offer it in the up-front questions (naming file + download, see above); if the user picks it, **download** it
   (these downloads are part of the Approbation; honour the download-permission rule —
   the user's choice of the presentation in the questions, plus naming the file, is the permission). Put it in its own empty folder.
-- Read it with `python-pptx` (or the `pptx` skill): pull slide text + speaker notes,
-  then summarise from that in the book's language. This is the preferred path — skip
-  the OCR/visual page extraction below unless no presentation covers the chapter.
-- If the deck is too sparse for the depth asked, say so and offer to supplement from
-  the pages (OCR / method A).
+- Read it with the bundled script — **no `python-pptx` needed** (a .ppsx is a zip of XML):
+  `python3 -I "$(find ~/.claude -name read_deck.py -path '*digi4school-summarizer*' 2>/dev/null | head -1)" deck.ppsx > deck.txt`
+  (or fetch it from the repo next to `build_summary_docx.py`). It prints one block per slide, in order, with the
+  template's repeating breadcrumb lines removed. Slides shown as `(N Bilder)` with almost no text carry their
+  content in an image: take it from the book pages.
+- **Reality check (one real test):** the deck of a 36-page chapter was 35 slides and ~11k characters of mostly
+  headings; the facts (definitions, examples, numbers, Vor-/Nachteile) are on the book pages. So use the deck as the
+  outline and ALWAYS read the book pages for the details — do not summarise from the deck alone.
 - **Completeness check:** a deck is a condensed view. Compare the headings of the requested
   pages (page headings from the search/TOC/viewer) with what the deck covers; for any heading
   the deck skips, take that part from the pages (OCR / method A) so no information is lost.
@@ -483,7 +504,9 @@ OCRs it with tesseract.js. Steps (via the Chrome `javascript_tool`):
   S.coverage = async function (summary, opts = {}) {
     const nz = (s) => s.toLowerCase().replace(/ß/g, 'ss');
     const sumN = nz(summary), pages = Object.keys(S.lines).map(Number).sort((a, b) => a - b);
-    const sumNums = new Set((summary.match(/\d[\d.,]*\d|\d/g) || []).map((x) => x.replace(/\D/g, '')));
+    // numbers of the summary, digits only; "3 000" (space thousands) counts as 3000
+    const sumNums = new Set([...(summary.match(/\d[\d.,]*\d|\d/g) || []), ...(summary.match(/\d{1,3}(?:[ \u00a0]\d{3})+/g) || [])].map((x) => x.replace(/\D/g, '')));
+    const sumDigits = [...sumNums].join(' ');
     const you = /\b(sie|ihre[nrms]?|ihnen|ihr)\b/i, ignore = new Set((opts.ignore || []).map((w) => nz(w).slice(0, 5)));
     const gap = opts.gap || 22, numbers = [], terms = {};
     for (const pg of pages) {
@@ -496,13 +519,14 @@ OCRs it with tesseract.js. Steps (via the Chrome `javascript_tool`):
         }
         if (cur.length) segs.push(cur);
         for (const sg of segs) {
-          const t = sg.map((w) => w.t).join(' ').trim(); if (!t || /^\d{1,3}$/.test(t) || you.test(t)) continue;
+          const t = sg.map((w) => w.t).join(' ').trim(); if (!t || /^[\d.,\s%]+$/.test(t) || you.test(t)) continue;
           const cx = (sg[0].b[0] + sg[sg.length - 1].b[2]) / 2, cy = (sg[0].b[1] + sg[0].b[3]) / 2;
           if (boxes.some(([x, y, w, h]) => cx >= x && cx <= x + w && cy >= y && cy <= y + h)) continue;
           const head = /^\d+(\.\d+)*\.?\s+[A-ZÄÖÜ]/.test(t);
           for (const m of t.matchAll(/\d{1,3}(?:[.,]\d{3})+|\d+[.,]\d+|\d{2,}/g)) {
             if (head && m.index === 0) continue;
-            if (sumNums.has(m[0].replace(/\D/g, ''))) continue;
+            const d = m[0].replace(/\D/g, ''); // "637.250" is covered by "637.250,71" (substring, >= 4 digits)
+            if (sumNums.has(d) || (d.length >= 4 && sumDigits.includes(d))) continue;
             numbers.push({ page: pg, n: m[0], ctx: t.slice(Math.max(0, m.index - 20), m.index + 25) });
           }
           const toks = t.split(/\s+/);

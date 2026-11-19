@@ -52,11 +52,11 @@ separate **standalone app**, which a Claude Code skill cannot be — see
 
 1. **Locate** — you give a topic or page range. If you give a topic, it finds the pages
    using the book's own search (tested on TRAUNER books).
-2. **Ask first** — a few short multiple-choice questions in your language (use the chapter presentation, if the
-   book has one, or book pages only? include the book's figures, models and tables?), then an estimated time
+2. **Ask first** — a few short multiple-choice questions in your language (book pages only, or the chapter presentation, if the
+   book has one, as an outline? include the book's figures, models and tables?), then an estimated time
    for the finished file.
-3. **Extract the fastest way** (see the speed ladder below) — the chapter presentation if you chose it,
-   otherwise the reader's text layer, otherwise OCR, otherwise on-screen reading.
+3. **Extract the fastest way that keeps the details** (see the speed ladder below) — the reader's text layer, otherwise OCR, otherwise on-screen reading; a chapter
+   presentation, if you choose it, only gives the outline.
 4. **Summarize** — a short, telegraphic **study summary** (bullets under the book's own headings, key
    terms in bold, about 80–110 words per book page), in the **book's own language**, using **only** what's in
    the book. Figures, models and tables are embedded as the book's own images, never retyped. Delivered as a
@@ -152,7 +152,7 @@ pick the fastest extraction route, and give you a `.docx`.
 
 For the pages you ask for, it takes the **highest route that works** and never does slower work than it has to:
 
-1. a chapter presentation (`.ppsx`) if the book has one for that chapter,
+1. a chapter presentation (`.ppsx`) as an outline, if you choose it (details still come from the pages),
 2. otherwise the reader's real text layer,
 3. otherwise OCR of the rendered pages (when the reader allows it),
 4. otherwise reading the pages on screen.
@@ -161,7 +161,7 @@ For the pages you ask for, it takes the **highest route that works** and never d
 
 | Route | For | Status |
 |------|-----|--------|
-| 1. Chapter presentation | books with a `.ppsx` deck | **Never run.** It also needs `python-pptx`, which the installer does not install. |
+| 1. Chapter presentation | books with a `.ppsx` deck | **Run once** (TRAUNER): download and reading work with no extra package; the deck was a thin outline (35 slides, mostly headings and images), so the page text was still read by OCR. It saved almost no time. |
 | 2. Text layer | Hölzel books | **Partly tested:** text extraction worked; no full summary was made. |
 | 3. OCR | TRAUNER books | **Tested end to end** on Praxisblicke Betriebswirtschaft IV, pages 30–65. |
 | 4. Reading on screen | digi4school-native books (e.g. Best Shots) | **Not tested.** Only found that OCR is blocked there. |
