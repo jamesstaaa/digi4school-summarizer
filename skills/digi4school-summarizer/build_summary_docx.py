@@ -10,6 +10,7 @@ Spec (JSON):
   "source": "Praxisblicke Betriebswirtschaft IV (TRAUNER), S. 40-55",   # shown in the footer
   "source_pages": 16,                       # pages of the BOOK that were summarised (length guard)
   "max_words_per_page": 160,                # optional override of the length guard
+  "min_words_per_page": 20,                 # optional: lower it for a version that is short on purpose (_kurz)
   "blocks": [
     {"h1": "1 Risiken", "pages": "S. 40-46"},
     {"h2": "1.1 Wirtschaftliche Risiken"},

@@ -99,7 +99,14 @@ When the user asks for a summary (a topic or a page range), do this:
 5. **After delivering, ask whether to shorten it** (same multiple-choice style, in the user's language):
    *Passt so* / *Kürzer (Kernpunkte pro Abschnitt, ca. 60 %)* / *Viel kürzer (nur Definitionen, Zahlen, Merksätze)*.
    On "shorter": rewrite from the SAME spec (no new browser work, no new page requests), keep every defined
-   term and number, keep the figures, rebuild as `<name>_kurz.docx`, and say how long it took.
+   term and number, keep the figures, and build a NEW file `<name>_kurz.docx` — the full file stays as it is.
+   **Targets (words of the full version):** "Kürzer" ≈ 60 %, "Viel kürzer" ≈ 35 %; count the result and say if it
+   ended up shorter than the target. Put `"min_words_per_page": 20` in the shorter spec so the builder's
+   "too short" CHECK does not fire for a version that is short on purpose.
+   **Then, in the same turn, SEND the new file with SendUserFile and say in one line what it is:** its exact
+   file name, that it is a SEPARATE file (the full version is unchanged), and the word counts (before → after).
+   Users who tick "shorter" and then reopen the old file think nothing happened. Never end that turn without the
+   file card in the chat. After the shorter file is delivered, do not ask again unless the user wants another cut.
 
 ## Summary style (MANDATORY — this is what "summary" means here)
 The output is a **study summary (Lernzettel style)** — NOT a paraphrase, retelling or
@@ -156,7 +163,12 @@ zum Weltmarkt` / `**Auswirkungen:** Ökonomie, Ökologie, Gesellschaft`.
 
 ## Figures & models (when the user said yes)
 > **Known gap:** the finder keys on tables, boxes and photo/graphic clusters. A plain bar/line chart with only red
-> bars (no table around it) is NOT found (one miss in the 36-page test). After running it, look at the OCR text of
+> bars (no table around it) is NOT found (one miss in the 36-page test). In a second run (pp. 10–29) it also
+> missed a beige two-column table with coloured number cells (Risikoklasse) and a diagram made of plain boxes
+> and arrows (risikopolitische Maßnahmen): tables/diagrams without the red header bars can be invisible to it.
+> **So after the finder, always scan the page text of every page for table/diagram signs** (a title with a
+> caption-like line, a column of short labels, "Tabelle", "Schema", "Abbildung") and look at pages where the
+> finder returned nothing but the text looks like a figure. After running it, look at the OCR text of
 > each page for chart signs (axis numbers like "4.000 3.500 …", "Werte in …", "Rang", a title ending in a year) on
 > pages where the finder returned nothing, and crop those by hand: `D4S.region(page, x, y, w, h)` with the chart's
 > frame (the title starts ~40 units from the left; make the box wide enough to include the last bar/label), view the
@@ -172,7 +184,11 @@ logos, icons, QR codes, portraits, and anything that belongs to an exercise (Auf
    (coloured chart). Run it for all pages in scope in ONE call. Exercise boxes (green) and text boxes
    (beige "Aha"/"Beispiel") are not returned — correct. Tested on pp. 51–65 of a TRAUNER book: found 10 of
    11 figures with exact boxes, no hits on exercise pages; it misses beige-on-white sample forms (optional).
-2. **Crop only those boxes:** per box `await D4S.region(page, x-6, y-6, w+12, h+12, {outW:1600})`, then
+2. **Crop only those boxes — generously, then trim:** per box use a margin of ~15–20 units and a region
+   that is clearly larger than the box (a first tight crop of a cycle diagram cut off its bottom box and needed
+   three tries); the white margins are trimmed with Pillow afterwards. For a manual crop (see the known gap
+   above) first look at the page area once (`D4S.region(page, x, y, w, h)` + zoom at scale 0.5), then crop. Per box
+   `await D4S.region(page, x-6, y-6, w+12, h+12, {outW:1600})`, then
    `computer zoom` with `save_to_disk:true` on `[0,0,viewportW,viewportH]` (batch 5–6 per browser_batch
    call). Look at each crop; redo a clipped one. Trim the white margins with Pillow (bbox + ~8 px).
    (Browser → local file without screenshots is NOT possible: Chrome blocks/hangs the local upload.)
