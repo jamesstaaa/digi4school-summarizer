@@ -110,13 +110,14 @@ transcript of the book. A document that follows the book sentence by sentence is
    as bullets or a Word table. Only when the book presents a comparison as running text (no
    table/graphic) may you build a small table yourself, using only the book's wording.
 7. **Examples in one short line** ("Bsp.: …").
-8. **One tight pass — write it short the FIRST time:** about **65–80 words per BOOK page** (≈ 1,000–1,100
-   words for 15 pages; measured: a first pass at 46 words/page lost about 20 small facts, restoring them
-   gave 72 words/page). Do NOT write a long draft and shorten it afterwards (that is a second full write,
-   1–2 min wasted). While writing: never restate what an embedded image already shows; examples in one
-   line; merge lead-in bullets; no asides (head counts, anecdote details) unless exam-relevant. The
-   builder hard-fails above 110 words/page (exit code 3) — then cut filler, **never facts** — and prints a
-   CHECK line below 45 words/page: then re-read for lost facts (fine only on exercise-heavy pages).
+8. **Complete first, clean formatting always, shorter only on request:** write ONE pass of about **80–110
+   words per BOOK page** (≈ 1,200–1,650 words for 15 pages). Being a little long is fine; losing facts or
+   messy formatting is not. Measured: a first pass at 46 words/page lost about 20 small facts; 72 words/page
+   with those restored was complete. Still no restating what an embedded image already shows, examples in one
+   line, no asides unless exam-relevant. If the user finds it too long, they ask for a shorter version and you
+   do a shortening pass on request (keep every defined term and number). The builder prints a CHECK line below
+   60 words/page (re-read for lost facts; fine on exercise-heavy pages) and hard-fails far above 160
+   words/page (exit code 3).
 9. **Completeness pass BEFORE building (do not skip):** go through the page text page by page. For each
    page tick off every heading, bold term, definition, number, named example (with its point), list item
    and measure (with its purpose) in your summary and add what is missing. Only exercise questions,
@@ -584,8 +585,11 @@ number) and enforces the length limit.
    "Aha!/Merke" box), `table` (`header`, `rows`, `widths`; `\n- ` inside a cell = bullets) — **only for
    a comparison the book gives as running text, never to retype a table the book shows**, `pagebreak`.
    Inline `**bold**` only. Put each figure block where the figure belongs in the text.
-4. Run `python3 build_summary_docx.py spec.json "<name>.docx"`. **Exit code 3 = too long** →
-   tighten (merge bullets, shorten, drop filler — never drop facts) and rebuild until it passes.
+4. Run `python3 build_summary_docx.py spec.json "<name>.docx"`. **Exit code 3 = far too long** →
+   tighten (merge bullets, drop filler — never drop facts) and rebuild. It also runs a layout check and prints
+   `LAYOUT OK` (all pictures and tables inside the margins, no floating objects that could overlap, captions
+   kept with their pictures); **exit code 4 = layout problem** → fix the spec (narrower figure, fewer figures
+   in one row) and rebuild until it prints `LAYOUT OK`.
 5. Save the file in the working folder and send it with SendUserFile. File name:
    `<Buch>_<Thema-oder-Seiten>.docx`. Done — do not render or re-check it in Word.
 

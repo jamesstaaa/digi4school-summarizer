@@ -9,7 +9,7 @@ Spec (JSON):
   "subtitle": "Praxisblicke Betriebswirtschaft IV - S. 40-55",
   "source": "Praxisblicke Betriebswirtschaft IV (TRAUNER), S. 40-55",   # shown in the footer
   "source_pages": 16,                       # pages of the BOOK that were summarised (length guard)
-  "max_words_per_page": 110,                # optional override of the length guard
+  "max_words_per_page": 160,                # optional override of the length guard
   "blocks": [
     {"h1": "1 Risiken", "pages": "S. 40-46"},
     {"h2": "1.1 Wirtschaftliche Risiken"},
@@ -24,8 +24,9 @@ Spec (JSON):
 }
 Inline formatting: **bold** only. A list that directly follows a bullet string = its sub-bullets.
 Table cells may contain several lines separated by \\n (lines starting with "- " become bullets).
-Exit code 3 = file written but the summary is TOO LONG for the source pages -> tighten and rebuild.
-A CHECK line (exit 0) = suspiciously SHORT (< 45 words/page) -> look for dropped facts.
+Exit code 3 = file written but the summary is far too long for the source pages -> tighten and rebuild.
+Exit code 4 = layout problem (picture/table wider than the text area, floating object) -> fix and rebuild.
+A CHECK line (exit 0) = suspiciously SHORT (< 60 words/page) -> look for dropped facts.
 """
 import json
 import os
@@ -44,8 +45,8 @@ GREY = RGBColor(0x66, 0x66, 0x66)
 WHITE = RGBColor(0xFF, 0xFF, 0xFF)
 USABLE_CM = 17.0          # A4 (21 cm) minus 2 x 2 cm margins
 MAX_FIG_HEIGHT_CM = 10.5
-DEFAULT_MAX_WORDS_PER_PAGE = 110
-DEFAULT_MIN_WORDS_PER_PAGE = 45   # below this: warn (facts may have been dropped), do not fail
+DEFAULT_MAX_WORDS_PER_PAGE = 160
+DEFAULT_MIN_WORDS_PER_PAGE = 60   # below this: warn (facts may have been dropped), do not fail
 
 
 # ---------- low-level helpers ----------
@@ -262,6 +263,37 @@ def build(spec, out_path):
 
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
     doc.save(out_path)
+    return check_layout(doc)
+
+
+def check_layout(doc):
+    """Structural layout check (no rendering needed). Overlap in Word comes from floating objects, pictures wider
+    than the text area, tables wider than the text area, or a picture separated from its caption. python-docx
+    only creates inline pictures, so this verifies the rest. Returns (problems, stats)."""
+    emu_cm = 360000.0
+    problems, pics, tables = [], 0, 0
+    body = doc.element.body
+    if body.findall(".//" + qn("w:anchor")):
+        problems.append("floating (anchored) object found - pictures must be inline")
+    for sh in doc.inline_shapes:
+        pics += 1
+        w, h = sh.width / emu_cm, sh.height / emu_cm
+        if w > USABLE_CM + 0.05:
+            problems.append(f"picture {pics} is {w:.1f} cm wide (text area {USABLE_CM:.0f} cm)")
+        if h > 24.5:
+            problems.append(f"picture {pics} is {h:.1f} cm tall (page text area ~26 cm)")
+    for t in doc.tables:
+        tables += 1
+        widths = [c.width for c in t.rows[0].cells if c.width]
+        tw = sum(widths) / emu_cm if widths else 0
+        if tw > USABLE_CM + 0.3:
+            problems.append(f"table {tables} is {tw:.1f} cm wide (text area {USABLE_CM:.0f} cm)")
+    for p in doc.paragraphs:
+        if p._p.findall(".//" + qn("w:drawing")) and not p.paragraph_format.keep_with_next:
+            nxt = p._p.getnext()
+            if nxt is not None and nxt.tag == qn("w:p") and "".join(nxt.itertext()).strip():
+                problems.append("a picture is not kept together with its caption")
+    return problems, {"pictures": pics, "tables": tables}
 
 
 def _table(doc, tb):
@@ -349,18 +381,21 @@ def _figures_row(doc, items):
     t = doc.add_table(rows=1, cols=len(items))
     t.alignment = WD_TABLE_ALIGNMENT.CENTER
     t.autofit = False
+    gap = 0.3  # cm of cell padding per figure
+    widths_sum = sum(float(f.get("width_cm", 5)) for f in items)
+    shrink = min(1.0, (USABLE_CM - gap * len(items)) / widths_sum)  # row too wide -> scale every figure down
     for cell, fg in zip(t.rows[0].cells, items):
         path = fg["path"]
         if not os.path.exists(path):
             raise SystemExit("figure not found: " + path)
         with Image.open(path) as im:
             w_px, h_px = im.size
-        want = float(fg.get("width_cm", 5))
+        want = float(fg.get("width_cm", 5)) * shrink
         width = want
         max_h = float(fg.get("max_h_cm", MAX_FIG_HEIGHT_CM))
         if width * h_px / w_px > max_h:
             width = max_h * w_px / h_px
-        cell.width = Cm(want + 0.2)
+        cell.width = Cm(want + gap)
         p = cell.paragraphs[0]
         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
         p.paragraph_format.space_after = Pt(1)
@@ -379,7 +414,14 @@ def main():
         raise SystemExit(2)
     with open(sys.argv[1], encoding="utf-8") as f:
         spec = json.load(f)
-    build(spec, sys.argv[2])
+    problems, stats = build(spec, sys.argv[2])
+    if problems:
+        print("LAYOUT PROBLEMS (fix the spec and rebuild):")
+        for pr in problems:
+            print("  - " + pr)
+    else:
+        print(f"LAYOUT OK: {stats['pictures']} pictures, {stats['tables']} tables, all inside the margins, "
+              "no floating objects, captions kept with their pictures")
     words = _count_words(spec.get("blocks", []))
     pages = spec.get("source_pages")
     msg = f"OK: wrote {sys.argv[2]} | {words} words"
@@ -398,6 +440,8 @@ def main():
             raise SystemExit(3)
     else:
         print(msg + " | WARNING: set source_pages so the length guard can run")
+    if problems:
+        raise SystemExit(4)
 
 
 if __name__ == "__main__":
