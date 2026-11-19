@@ -52,13 +52,15 @@ separate **standalone app**, which a Claude Code skill cannot be — see
 
 1. **Locate** — you give a topic or page range. If you give a topic, it finds the pages
    using the book's own search (tested on TRAUNER books).
-2. **Extract the fastest way** (see the speed ladder below) — a ready-made chapter
-   presentation if one exists, otherwise the reader's text layer, otherwise OCR, otherwise
-   on-screen reading.
-3. **Summarize** — a short, telegraphic **study summary** (bullets under the book's own headings, key
-   terms in bold, about 80–110 words per book page — complete first, and you can ask for a shorter version), in the **book's own language**, using **only** what's in
-   the book. It asks one question first — in your language — whether to include the book's figures, models
-   and tables (embedded as the book's own images, never retyped). Delivered as a clean **Word document**.
+2. **Ask first** — a few short multiple-choice questions in your language (use the chapter presentation, if the
+   book has one, or book pages only? include the book's figures, models and tables?), then an estimated time
+   for the finished file.
+3. **Extract the fastest way** (see the speed ladder below) — the chapter presentation if you chose it,
+   otherwise the reader's text layer, otherwise OCR, otherwise on-screen reading.
+4. **Summarize** — a short, telegraphic **study summary** (bullets under the book's own headings, key
+   terms in bold, about 80–110 words per book page), in the **book's own language**, using **only** what's in
+   the book. Figures, models and tables are embedded as the book's own images, never retyped. Delivered as a
+   clean **Word document**, and afterwards it asks whether you want a shorter version.
 
 ## Requirements
 
@@ -190,7 +192,7 @@ publishers' books use other colours, so the finder may find nothing there.
   that the summary lacks; on that example it flagged 8 of 10 known lost facts, with many harmless extras), but **always skim the result against your book**.
 - Numbers come from OCR; a second text pass flags differences, but it can miss a number that both
   passes read wrong. Numbers inside embedded images are always the book's own.
-- The Word builder checks the layout by structure (pictures and tables inside the margins, nothing floating, captions kept with their pictures) and prints `LAYOUT OK`. Rendering every page to look at it is not automated: Word's PDF export hangs here, so open the file and look at it once.
+- The Word builder checks the layout by structure (pictures and tables inside the margins, nothing floating, captions kept with their pictures) and prints `LAYOUT OK`. 
 
 ## Roadmap
 

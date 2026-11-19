@@ -34,9 +34,9 @@ extension is the alternative (tools `mcp__claude-in-chrome__*`).
   summary. Word-for-word is NOT required — faithful meaning is.
 - **Language:** write the summary in the book's own language by default (e.g. German
   for Austrian HAK textbooks). Only use another language if the user asks this time.
-- **Source priority (presentation-first):** when the user asks for a chapter/topic,
+- **Source priority (presentation, if the user agrees):** when the user asks for a chapter/topic,
   FIRST check the book's Lernmaterialien → PräsentationsBox for a presentation
-  (`.ppsx`) covering it. If one exists, use THAT as the source — it's the publisher's
+  (`.ppsx`) covering it. If one exists, OFFER it in the up-front questions; when the user chooses it, use THAT as the source — it's the publisher's
   own topic summary and reads directly as PowerPoint (no OCR). Only fall back to
   OCR / reading the pages (3B / method A) when no presentation covers the requested
   chapter, or the user explicitly wants the full page-level detail. Tell the user
@@ -69,21 +69,31 @@ extension is the alternative (tools `mcp__claude-in-chrome__*`).
 
 ## Interaction flow (what the user sees — keep it simple)
 When the user asks for a summary (a topic or a page range), do this:
-1. **Pre-flight FIRST, silently.** Before extracting anything, resolve the scope (§1a)
-   and check the route (§1b): how many chapters it spans, whether presentations cover
-   them, which route applies. Do this quickly — **do NOT narrate the mechanics.**
-2. **Then, before you start, ask ONE question and WAIT.** In the **user's own language** (the language
-   they wrote in; system language if unclear — never ask a German speaker in English). Say what you are
-   about to do + the scope + a rough **time estimate** (with / without figures), and ask: **should the
-   figures, models and tables from the pages be included? (yes/no)**. Skip it if they already said so.
-   Example (German): *"Bereit, die Seiten 51–65 zusammenzufassen (~6 Min. mit Abbildungen, ~3 Min. ohne).
-   Sollen Abbildungen, Modelle und Tabellen aus den Seiten eingefügt werden? (ja/nein)"* — English:
-   *"Ready to summarise pages 51–65 (~6 min with figures, ~3 without). Include the figures, models and
-   tables from the pages? (yes/no)"*. The user does NOT care *how* — never explain routes, OCR or pacing.
-   (The summary itself stays in the **book's** language — see Hard rules.)
-3. **Then do it.** The output is always a **Word (.docx) file** (no PDF step, no Word export/layout check
-   — the builder's layout is already tested). Never dump the summary into the chat. Save the file in the
-   working folder and send it with SendUserFile.
+1. **Pre-flight FIRST, silently.** Resolve the scope (§1a) and check the route (§1b): how many pages, whether a
+   chapter presentation covers the request, which route applies. Quick — **do NOT narrate the mechanics.**
+2. **Ask short multiple-choice questions BEFORE starting, then WAIT.** Ask only what makes sense for this
+   request, at most three, in the **user's own language** (the language they wrote in; system language if
+   unclear). Use the `AskUserQuestion` tool when it is available (load it with ToolSearch
+   `select:AskUserQuestion` if deferred); otherwise print the same questions as numbered choices in chat.
+   Skip any question the user already answered or that does not apply:
+   - **Source — only when a presentation covers a WHOLE chapter/topic** (never for exact page ranges):
+     *Presentation (fast, condensed; headings it skips are taken from the pages)* / *Book pages only (full detail)*.
+   - **Figures, models and tables from the pages included?** *Yes (the book's own images)* / *No (text only)*.
+   - **Anything else that changes the result and is not obvious**, e.g. scope unclear between two chapters.
+   Never ask how it works (routes, OCR, pacing) — the user does not care. Never ask about length or format
+   (length is offered AFTER the result; the output is always Word).
+   Example (German): *Quelle: Präsentation (schnell, verdichtet) / Nur Buchseiten (volle Details) — Abbildungen,
+   Modelle, Tabellen einfügen: Ja / Nein.*
+3. **After the answers, give the estimate for the finished Word file, then start immediately.** One line:
+   *"Fertig in ca. 5 Min."* / *"Ready in about 5 min."* Estimate: about **1 min + 0.2 min per page without
+   figures, + 0.1 min per page and ≈ 0.2 min per figure with figures** (measured once: 15 pages with figures
+   = 4.3 min; the rest is extrapolated). A deck-only source is faster. Round up, say "ca." — it is an estimate.
+4. **Do it.** The output is always a **Word (.docx) file** (no PDF step, no Word export or layout rendering). Never dump the
+   summary into chat. Save the file in the working folder and send it with SendUserFile.
+5. **After delivering, ask whether to shorten it** (same multiple-choice style, in the user's language):
+   *Passt so* / *Kürzer (Kernpunkte pro Abschnitt, ca. 60 %)* / *Viel kürzer (nur Definitionen, Zahlen, Merksätze)*.
+   On "shorter": rewrite from the SAME spec (no new browser work, no new page requests), keep every defined
+   term and number, keep the figures, rebuild as `<name>_kurz.docx`, and say how long it took.
 
 ## Summary style (MANDATORY — this is what "summary" means here)
 The output is a **study summary (Lernzettel style)** — NOT a paraphrase, retelling or
@@ -188,13 +198,12 @@ Tell the user upfront which route applies and the rough time, so expectations ar
 |-------|------------------------|------------|--------------|
 | 1. Presentation (`.ppsx`) | ~6–9 min | ~2 min | downloads one file; the figure pass reads page files |
 | 2. Text layer (Hölzel) | ~6–9 min | ~2–3 min | loads the pages the way the viewer does |
-| 3. OCR (`ocrFast`, TRAUNER) | ~6 min (est.) | ~3 min | fetches page files directly, one at a time |
+| 3. OCR (`ocrFast`, TRAUNER) | ~4–5 min (measured 4.3) | ~3 min | fetches page files directly, one at a time |
 | 4. Visual reading (native/Best Shots) | ~5–8 min | ~3–5 min | uses the viewer as intended |
 
-(Only the OCR route was timed: 15 pages of a TRAUNER book with figures took **11.6 min** with the old flow —
-~4 min of that was a hanging Word export and extra checks, ~1.3 min rewriting the summary a second
-time. The lean flow here should take **~6 min** — an estimate, not yet timed. Walls: the ~1 page/s request rate,
-and ~2 min to write ~1,000 words. The other rows are rough estimates.)
+(Only the OCR route was timed: 15 pages of a TRAUNER book with figures took **4.3 min** with the current flow
+(old flow: 11.6 min). Walls: the ~1 page/s request rate and the time to write the summary. The other rows
+are rough estimates, not measured.)
 
 ## Procedure
 
@@ -233,10 +242,9 @@ Before extracting pages, see whether the chapter already has a publisher present
 - Under **Schüler → PräsentationsBox** are the `.ppsx` presentations (the topic
   summaries), e.g. `02 Internationale Geschaeftstaetigkeit.ppsx`; **WorkBox** holds
   PDFs. Match the title to the requested chapter/topic.
-- If a matching presentation exists: tell the user which one, then **download** it
+- If a matching presentation exists: offer it in the up-front questions; if the user picks it, name it, then **download** it
   (these downloads are part of the Approbation; honour the download-permission rule —
-  since the user set presentation-first as the default, naming the file and proceeding
-  is enough). Put it in its own empty folder.
+  the user's choice of the presentation in the questions, plus naming the file, is the permission). Put it in its own empty folder.
 - Read it with `python-pptx` (or the `pptx` skill): pull slide text + speaker notes,
   then summarise from that in the book's language. This is the preferred path — skip
   the OCR/visual page extraction below unless no presentation covers the chapter.
